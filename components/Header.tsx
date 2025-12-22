@@ -1,9 +1,7 @@
 import { mainColor } from "@/constants/Colors";
 import { useGlobalContext } from "@/context/GlobalContext";
-import * as DocumentPicker from "expo-document-picker";
 import { usePathname } from "expo-router";
-import * as SecureStore from "expo-secure-store";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import {
   Modal,
   StyleSheet,
@@ -15,32 +13,10 @@ import {
 import Animated, { useSharedValue, withSpring } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const AUDIO_MIME_TYPES = [
-  "audio/mpeg",
-  "audio/wav",
-  "audio/mp4",
-  "audio/ogg",
-  "audio/flac",
-  "audio/acc",
-];
-
-const AUDIO_EXTENSIONS = ["mp3", "mav", "m4a", "ogg", "flac", "acc"];
-
-type AudioFile = {
-  id: string;
-  uri: string;
-  assetId?: string;
-  name: string;
-  mimeType: string;
-  size: number;
-  duration?: number;
-  lastCheck: string;
-};
-
 export default function Header() {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
-  const { audios, setAudios } = useGlobalContext();
+  const { pickAudios } = useGlobalContext();
   const [showModal, setShowModal] = useState(false);
   const isHome = pathname === "/";
 
@@ -64,50 +40,6 @@ export default function Header() {
   //     return false;
   //   }
   // }, []);
-
-  const pickAudios = useCallback(async () => {
-    try {
-      // const hasPermission = await requestMediaPermission();
-      // if (!hasPermission) return;
-
-      // const granted = await PermissionsAndroid.request(
-      //   PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-      // );
-
-      // const { status, granted } = await requestRecordingPermissionsAsync();
-      // console.log({ status, granted });
-
-      const result = await DocumentPicker.getDocumentAsync({
-        type: AUDIO_MIME_TYPES,
-        multiple: true,
-        copyToCacheDirectory: false,
-      });
-      if (result.canceled) return;
-      const processedFiles: {
-        customName: string;
-        name: string;
-        uri: string;
-      }[] = [];
-      for (const asset of result.assets) {
-        const fileExt = asset.name.split(".").pop()?.toLowerCase();
-        if (!fileExt || !AUDIO_EXTENSIONS.includes(fileExt)) {
-          continue;
-        }
-        processedFiles.push({
-          name: asset.name,
-          uri: asset.uri,
-          customName: "",
-        });
-      }
-      const selectedFileUris = processedFiles.map((f) => f.uri);
-      const cleanedAudios = audios?.filter(
-        (a) => selectedFileUris.indexOf(a.uri) === -1,
-      );
-      const newAudios = [...audios, ...processedFiles];
-      setAudios(newAudios);
-      SecureStore.setItemAsync("vinyl-library", JSON.stringify(newAudios));
-    } catch (error) {}
-  }, []);
 
   const handleHeaderButtonClick = () => {
     if (isHome) {
@@ -170,9 +102,10 @@ export default function Header() {
                   onPress={() => handleModalActions(text)}
                 >
                   <Text
-                    style={
-                      text === "Cancel" ? styles.cancelButton : styles.okButton
-                    }
+                    style={[
+                      styles.baseButton,
+                      text === "Cancel" ? "" : styles.okButton,
+                    ]}
                   >
                     {text}
                   </Text>
@@ -246,23 +179,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 50,
   },
-  cancelButton: {
+  baseButton: {
     width: 90,
     textAlign: "center",
     paddingVertical: 10,
-    paddingHorizontal: 16,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: mainColor,
-    fontWeight: "bold",
   },
   okButton: {
-    width: 90,
-    textAlign: "center",
-    paddingVertical: 10,
-    borderRadius: 20,
     backgroundColor: mainColor,
     color: "#fff",
-    fontWeight: "bold",
   },
 });
