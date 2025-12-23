@@ -1,3 +1,4 @@
+import { mainColor } from "@/constants/Colors";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 const styles = StyleSheet.create({
@@ -11,7 +12,7 @@ const styles = StyleSheet.create({
 export default function Loading({ size }: { size?: "small" | "large" }) {
   return (
     <View style={styles.wrapper}>
-      <ActivityIndicator size={size || "large"} animating />
+      <ActivityIndicator size={size || "large"} animating color={mainColor} />
     </View>
   );
 }

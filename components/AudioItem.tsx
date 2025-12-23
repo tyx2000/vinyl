@@ -1,23 +1,16 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import ReAnimated, {
+  FadeInDown,
   SharedValue,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import { mainColor } from "@/constants/Colors";
 
 const styles = StyleSheet.create({
   item: {
     borderLeftWidth: 4,
-    borderColor: mainColor,
     height: 45,
     padding: 10,
     flexDirection: "row",
@@ -55,9 +48,11 @@ const styles = StyleSheet.create({
 
 export default function AudioItem({
   item,
+  color,
   moreOptions,
   setPlayingAudio,
 }: {
+  color: string;
   item: Record<string, string>;
   moreOptions: Function;
   setPlayingAudio: Function;
@@ -91,8 +86,11 @@ export default function AudioItem({
       renderRightActions={rightActions}
     >
       <GestureDetector gesture={longPressGesture}>
-        <Pressable onPress={() => setPlayingAudio(item)}>
-          <View style={styles.item}>
+        <TouchableOpacity onPress={() => setPlayingAudio(item)}>
+          <ReAnimated.View
+            entering={FadeInDown.springify()}
+            style={[styles.item, { borderColor: color }]}
+          >
             <View style={styles.audioInfo}>
               <View style={styles.dragHandler}>
                 <View style={styles.dragIcon}></View>
@@ -117,8 +115,8 @@ export default function AudioItem({
             >
               <FontAwesome size={24} name="ellipsis-v" />
             </TouchableOpacity>
-          </View>
-        </Pressable>
+          </ReAnimated.View>
+        </TouchableOpacity>
       </GestureDetector>
     </ReanimatedSwipeable>
   );

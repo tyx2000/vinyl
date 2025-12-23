@@ -35,7 +35,6 @@ export default function GlobalProvider({ children }: { children: ReactNode }) {
         new Promise((resolve) => setTimeout(resolve, 1500)),
       ]);
       if (lib) {
-        console.log({ lib });
         setAudios(JSON.parse(lib));
       }
     } catch (error) {
@@ -71,6 +70,7 @@ export default function GlobalProvider({ children }: { children: ReactNode }) {
           customName: "",
         });
         const newAudios = [...audios, ...files];
+        console.log(newAudios);
         setAudios(newAudios);
         SecureStore.setItemAsync("vinyl-library", JSON.stringify(newAudios));
       }

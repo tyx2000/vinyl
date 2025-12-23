@@ -1,7 +1,7 @@
 import AudioItem from "@/components/AudioItem";
 import Empty from "@/components/Empty";
 import Loading from "@/components/Loading";
-import { mainColor } from "@/constants/Colors";
+import { mainColor, secondColor } from "@/constants/Colors";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { FlashList } from "@shopify/flash-list";
 import { useState } from "react";
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
     height: 5,
   },
   footer: {
-    height: 100,
+    height: 110,
     marginTop: 20,
     alignItems: "center",
   },
@@ -92,7 +92,6 @@ export default function Home() {
 
   function moreOptions(e: GestureResponderEvent, item: Record<string, string>) {
     e.stopPropagation();
-    console.log(e.nativeEvent);
     setOptionAudio(item);
     translateY.value = withSpring(0);
   }
@@ -116,10 +115,18 @@ export default function Home() {
         <Loading />
       ) : (
         <FlashList
+          // onLoad={onload}
           data={audios}
-          renderItem={({ item }: { item: Record<string, string> }) => (
+          renderItem={({
+            item,
+            index,
+          }: {
+            item: Record<string, string>;
+            index: number;
+          }) => (
             <AudioItem
               item={item}
+              color={index % 2 === 0 ? mainColor : secondColor}
               moreOptions={moreOptions}
               setPlayingAudio={setPlayingAudio}
             />
