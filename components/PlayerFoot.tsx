@@ -1,7 +1,12 @@
 // import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { mainColor } from "@/constants/Colors";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { AudioPlayer, AudioStatus, createAudioPlayer } from "expo-audio";
+import {
+  AudioPlayer,
+  AudioStatus,
+  createAudioPlayer,
+  setAudioModeAsync,
+} from "expo-audio";
 import { useEffect, useRef, useState } from "react";
 import {
   GestureResponderEvent,
@@ -123,9 +128,13 @@ export default function PlayerFoot({
     updateTime("duration", status.duration);
   };
 
-  const initPlayer = () => {
+  const initPlayer = async () => {
     if (playingAudio.uri) {
       try {
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          shouldPlayInBackground: true,
+        });
         playerRef.current = createAudioPlayer(playingAudio.uri);
         playerRef.current.addListener(
           "playbackStatusUpdate",

@@ -1,7 +1,9 @@
 import { GlobalContext } from "@/context/GlobalContext";
 import * as DocumentPicker from "expo-document-picker";
+import { Paths } from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as SecureStore from "expo-secure-store";
-import { ReactNode, useCallback, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import PlayerFoot from "./PlayerFoot";
 
@@ -26,13 +28,14 @@ export default function GlobalProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [audios, setAudios] = useState<Record<string, string>[]>([]);
   const [playingAudio, setPlayingAudio] = useState<Record<string, string>>({});
+  const [playlist, setPlaylist] = useState<Record<string, string>[]>([]);
 
   async function initLibrary() {
     setLoading(true);
     try {
       const [lib] = await Promise.all([
         SecureStore.getItemAsync("vinyl-library"),
-        new Promise((resolve) => setTimeout(resolve, 1500)),
+        new Promise((resolve) => setTimeout(resolve, 800)),
       ]);
       if (lib) {
         setAudios(JSON.parse(lib));
@@ -48,7 +51,7 @@ export default function GlobalProvider({ children }: { children: ReactNode }) {
     initLibrary();
   }, []);
 
-  const pickAudios = useCallback(async () => {
+  const pickAudios = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: AUDIO_MIME_TYPES,
@@ -64,22 +67,77 @@ export default function GlobalProvider({ children }: { children: ReactNode }) {
         if (!fileExt || !AUDIO_EXTENSIONS.includes(fileExt)) {
           continue;
         }
+        const audioRootDir = Paths.join(
+          FileSystem.documentDirectory as string,
+          "vinylAudios",
+        );
+        const audioSavePath = Paths.join(
+          audioRootDir,
+          `${Date.now()}-${asset.name}`,
+        );
+
+        const fileInfo = await FileSystem.getInfoAsync(audioSavePath);
+        if (fileInfo.exists && fileInfo.size !== 0) {
+          if (fileInfo.isDirectory) {
+            await FileSystem.deleteAsync(audioSavePath);
+            console.log("删除同名目录");
+          } else {
+            await FileSystem.deleteAsync(audioSavePath);
+          }
+        }
+        const dirInfo = await FileSystem.getInfoAsync(audioRootDir);
+        if (!dirInfo.exists) {
+          await FileSystem.makeDirectoryAsync(audioSavePath, {
+            intermediates: true,
+          });
+        }
+        await FileSystem.copyAsync({
+          from: asset.uri,
+          to: audioSavePath,
+        });
+        const finalFileInfo = await FileSystem.getInfoAsync(audioSavePath);
+        if (!finalFileInfo.exists || finalFileInfo.size === 0) {
+          throw new Error("copy file failed, file is empty");
+        }
+
         files.push({
           name: asset.name,
-          uri: asset.uri,
+          uri: audioSavePath,
           customName: "",
         });
-        const newAudios = [...audios, ...files];
-        console.log(newAudios);
-        setAudios(newAudios);
-        SecureStore.setItemAsync("vinyl-library", JSON.stringify(newAudios));
       }
-    } catch (error) {}
-  }, []);
+      const newAudios: Record<string, string>[] = [],
+        uris = new Set();
+      [...audios, ...files].forEach((a) => {
+        if (uris.has(a.uri)) {
+          return;
+        } else {
+          uris.add(a.uri);
+          newAudios.push(a);
+        }
+      });
+
+      await SecureStore.setItemAsync(
+        "vinyl-library",
+        JSON.stringify(newAudios),
+      );
+      setAudios(newAudios);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <GlobalContext.Provider
-      value={{ setPlayingAudio, audios, setAudios, loading, pickAudios }}
+      value={{
+        setPlayingAudio,
+        audios,
+        setAudios,
+        loading,
+        pickAudios,
+        playlist,
+        setPlaylist,
+      }}
     >
       <View style={styles.wrapper}>
         {children}

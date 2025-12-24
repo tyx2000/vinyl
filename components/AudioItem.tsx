@@ -3,7 +3,8 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import ReAnimated, {
-  FadeInDown,
+  FlipInEasyX,
+  FlipOutEasyX,
   SharedValue,
   useAnimatedStyle,
 } from "react-native-reanimated";
@@ -62,7 +63,7 @@ export default function AudioItem({
     drag: SharedValue<number>,
   ) => {
     const styleAnimation = useAnimatedStyle(() => {
-      console.log(progress.value, drag.value);
+      // console.log(progress.value, drag.value);
       return { transform: [{ translateX: drag.value + 50 }] };
     });
     return (
@@ -88,7 +89,8 @@ export default function AudioItem({
       <GestureDetector gesture={longPressGesture}>
         <TouchableOpacity onPress={() => setPlayingAudio(item)}>
           <ReAnimated.View
-            entering={FadeInDown.springify()}
+            entering={FlipInEasyX.springify()}
+            exiting={FlipOutEasyX.springify()}
             style={[styles.item, { borderColor: color }]}
           >
             <View style={styles.audioInfo}>

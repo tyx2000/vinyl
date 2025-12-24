@@ -4,6 +4,8 @@ import Loading from "@/components/Loading";
 import { mainColor, secondColor } from "@/constants/Colors";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { FlashList } from "@shopify/flash-list";
+import * as FileSystem from "expo-file-system/legacy";
+import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
 import {
   GestureResponderEvent,
@@ -85,7 +87,8 @@ const OPTION_ACTIONS = [
 ];
 
 export default function Home() {
-  const { audios, loading, pickAudios, setPlayingAudio } = useGlobalContext();
+  const { audios, setAudios, loading, pickAudios, setPlayingAudio } =
+    useGlobalContext();
   const [optionAudio, setOptionAudio] = useState<Record<string, string>>({});
 
   const translateY = useSharedValue(300);
@@ -96,7 +99,21 @@ export default function Home() {
     translateY.value = withSpring(0);
   }
 
-  function handleOptionAction(action: string) {
+  async function handleOptionAction(action: string) {
+    if (action === "delete") {
+      const t = audios.filter(
+        (a: Record<string, string>) => a.uri !== optionAudio.uri,
+      );
+      await SecureStore.setItemAsync("vinyl-library", JSON.stringify(t));
+      await FileSystem.deleteAsync(optionAudio.uri);
+      setAudios(t);
+
+      setOptionAudio({});
+    }
+    if (action === "addTo") {
+    }
+    if (action === "addToNewPlaylist") {
+    }
     if (action === "close") {
       translateY.value = withSpring(300, {}, (finished) => {
         if (finished) {
