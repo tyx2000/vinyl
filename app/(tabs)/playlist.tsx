@@ -1,11 +1,16 @@
+import Button from "@/components/Button";
+import Empty from "@/components/Empty";
+import Loading from "@/components/Loading";
+import PlaylistItem from "@/components/PlaylistItem";
+import { mainColor, secondColor } from "@/constants/Colors";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { FlashList } from "@shopify/flash-list";
 import * as SecureStore from "expo-secure-store";
-import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
 
 export default function Playlist() {
-  const { playlist, setPlaylist } = useGlobalContext();
+  const { playlist, setPlaylist, setModalName } = useGlobalContext();
   const [loading, setLoading] = useState(false);
 
   async function initPlaylist() {
@@ -25,27 +30,48 @@ export default function Playlist() {
     }
   }
 
+  useEffect(() => {
+    initPlaylist();
+  }, []);
+
   function renderItem({
     item,
     index,
   }: {
     index: number;
-    item: {
-      id: string;
-      name: string;
-      audios: { id: string; name: string; customName: string; uri: string }[];
-    };
+    item: Record<string, string>;
   }) {
-    return <View>{index}</View>;
+    return (
+      <PlaylistItem
+        item={item}
+        color={index % 2 === 0 ? mainColor : secondColor}
+        moreOptions={() => {}}
+        onPress={() => {}}
+      />
+    );
   }
 
   return (
     <View style={styles.container}>
-      <FlashList
-        data={[]}
-        renderItem={renderItem}
-        ListEmptyComponent={<Text>空列表</Text>}
-      />
+      {loading ? (
+        <Loading />
+      ) : (
+        <FlashList
+          data={playlist}
+          renderItem={renderItem}
+          ListEmptyComponent={<Empty />}
+          contentContainerStyle={styles.listContainer}
+          ListFooterComponent={() => (
+            <View style={styles.footer}>
+              <Button
+                text="New playlist"
+                onPress={() => setModalName("playlist")}
+              />
+            </View>
+          )}
+          ItemSeparatorComponent={() => <View style={styles.divider}></View>}
+        />
+      )}
     </View>
   );
 }
@@ -64,5 +90,13 @@ const styles = StyleSheet.create({
     height: 110,
     marginTop: 20,
     alignItems: "center",
+  },
+  footButton: {
+    color: "#fff",
+    borderRadius: 20,
+    backgroundColor: mainColor,
+    fontWeight: "bold",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
   },
 });

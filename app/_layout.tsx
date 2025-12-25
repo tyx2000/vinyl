@@ -14,6 +14,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import Button from "@/components/Button";
 import { useColorScheme } from "@/components/useColorScheme";
 
 export {
@@ -63,6 +64,13 @@ function RootLayoutNav() {
           <GlobalProvider>
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="playlist/[playlistId]"
+                options={{
+                  headerShown: true,
+                  headerRight: () => <Button text="Add" onPress={() => {}} />,
+                }}
+              />
               <Stack.Screen name="modal" options={{ presentation: "modal" }} />
             </Stack>
           </GlobalProvider>

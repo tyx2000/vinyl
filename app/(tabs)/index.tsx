@@ -1,4 +1,5 @@
 import AudioItem from "@/components/AudioItem";
+import Button from "@/components/Button";
 import Empty from "@/components/Empty";
 import Loading from "@/components/Loading";
 import { mainColor, secondColor } from "@/constants/Colors";
@@ -86,20 +87,23 @@ const OPTION_ACTIONS = [
   { id: "close", label: "Close" },
 ];
 
-export default function Home() {
+const Home = () => {
   const { audios, setAudios, loading, pickAudios, setPlayingAudio } =
     useGlobalContext();
   const [optionAudio, setOptionAudio] = useState<Record<string, string>>({});
 
   const translateY = useSharedValue(300);
 
-  function moreOptions(e: GestureResponderEvent, item: Record<string, string>) {
+  const moreOptions = (
+    e: GestureResponderEvent,
+    item: Record<string, string>,
+  ) => {
     e.stopPropagation();
     setOptionAudio(item);
     translateY.value = withSpring(0);
-  }
+  };
 
-  async function handleOptionAction(action: string) {
+  const handleOptionAction = async (action: string) => {
     if (action === "delete") {
       const t = audios.filter(
         (a: Record<string, string>) => a.uri !== optionAudio.uri,
@@ -124,7 +128,22 @@ export default function Home() {
         setOptionAudio({});
       }, 300);
     }
-  }
+  };
+
+  const renderItem = ({
+    item,
+    index,
+  }: {
+    item: Record<string, string>;
+    index: number;
+  }) => (
+    <AudioItem
+      item={item}
+      color={index % 2 === 0 ? mainColor : secondColor}
+      moreOptions={moreOptions}
+      setPlayingAudio={setPlayingAudio}
+    />
+  );
 
   return (
     <View style={styles.container}>
@@ -134,28 +153,13 @@ export default function Home() {
         <FlashList
           // onLoad={onload}
           data={audios}
-          renderItem={({
-            item,
-            index,
-          }: {
-            item: Record<string, string>;
-            index: number;
-          }) => (
-            <AudioItem
-              item={item}
-              color={index % 2 === 0 ? mainColor : secondColor}
-              moreOptions={moreOptions}
-              setPlayingAudio={setPlayingAudio}
-            />
-          )}
+          renderItem={renderItem}
           contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={<Empty text="Empty Library"></Empty>}
+          ListEmptyComponent={<Empty />}
           ItemSeparatorComponent={() => <View style={styles.divider}></View>}
           ListFooterComponent={() => (
             <View style={styles.footer}>
-              <TouchableOpacity onPress={pickAudios}>
-                <Text style={styles.footButton}>Add More</Text>
-              </TouchableOpacity>
+              <Button text="Add more" onPress={pickAudios} />
             </View>
           )}
         />
@@ -189,4 +193,6 @@ export default function Home() {
       </Modal>
     </View>
   );
-}
+};
+
+export default Home;

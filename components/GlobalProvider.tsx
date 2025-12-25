@@ -5,6 +5,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as SecureStore from "expo-secure-store";
 import { ReactNode, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
+import NewPlaylistModal from "./NewPlaylistModal";
 import PlayerFoot from "./PlayerFoot";
 
 const AUDIO_MIME_TYPES = [
@@ -29,6 +30,7 @@ export default function GlobalProvider({ children }: { children: ReactNode }) {
   const [audios, setAudios] = useState<Record<string, string>[]>([]);
   const [playingAudio, setPlayingAudio] = useState<Record<string, string>>({});
   const [playlist, setPlaylist] = useState<Record<string, string>[]>([]);
+  const [modalName, setModalName] = useState("");
 
   async function initLibrary() {
     setLoading(true);
@@ -127,6 +129,15 @@ export default function GlobalProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const newPlaylist = async (name: string) => {
+    if (name) {
+      const t = [...playlist, { id: "p" + Date.now(), name }];
+      await SecureStore.setItemAsync("vinyl-playlist", JSON.stringify(t));
+      setPlaylist(t);
+    }
+    setModalName("");
+  };
+
   return (
     <GlobalContext.Provider
       value={{
@@ -137,12 +148,20 @@ export default function GlobalProvider({ children }: { children: ReactNode }) {
         pickAudios,
         playlist,
         setPlaylist,
+        setModalName,
       }}
     >
       <View style={styles.wrapper}>
         {children}
         <PlayerFoot playingAudio={playingAudio} />
       </View>
+      <NewPlaylistModal
+        visible={modalName === "playlist"}
+        onCancel={() => {
+          setModalName("");
+        }}
+        onOk={newPlaylist}
+      />
     </GlobalContext.Provider>
   );
 }
