@@ -6,17 +6,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: mainColor,
-  },
-  buttonText: {
-    color: "#fff",
-    textAlign: "center",
   },
 });
 
-const Button = ({ text, onPress }: { text: string; onPress: Function }) => (
-  <TouchableOpacity style={styles.button} onPress={() => onPress}>
-    <Text style={styles.buttonText}>{text}</Text>
+const Button = ({
+  type,
+  text,
+  onPress,
+}: {
+  type?: "link" | "solid";
+  text: string;
+  onPress: Function;
+}) => (
+  <TouchableOpacity
+    style={[
+      styles.button,
+      { backgroundColor: type === "link" ? "transparent" : mainColor },
+    ]}
+    onPress={() => onPress()}
+  >
+    <Text style={{ color: type === "link" ? mainColor : "#fff" }}>{text}</Text>
   </TouchableOpacity>
 );
 

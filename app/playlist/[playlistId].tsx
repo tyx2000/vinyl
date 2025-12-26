@@ -6,7 +6,11 @@ import { FlashList } from "@shopify/flash-list";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useLayoutEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Modal, StyleSheet, View } from "react-native";
+import ReAnimated, {
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -26,6 +30,32 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 15,
   },
+  modalView: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    height: 600,
+    backgroundColor: "white",
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    gap: 10,
+  },
+  actions: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
 });
 
 const PlaylistDetails = () => {
@@ -33,6 +63,10 @@ const PlaylistDetails = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [audios, setAudios] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedAudios, setSelectedAudios] = useState([]);
+
+  const translateY = useSharedValue(600);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -61,6 +95,8 @@ const PlaylistDetails = () => {
     getPlaylistAudios();
   }, []);
 
+  const addSelectedAudioToPlaylist = async () => {};
+
   return (
     <View style={styles.wrapper}>
       {loading ? (
@@ -72,11 +108,49 @@ const PlaylistDetails = () => {
           renderItem={({ item, index }) => <View></View>}
           ListFooterComponent={() => (
             <View style={styles.footer}>
-              <Button text="New playlist" onPress={() => {}} />
+              <Button
+                text="Add audios"
+                onPress={() => {
+                  setModalVisible(true);
+                  translateY.value = withSpring(0);
+                }}
+              />
             </View>
           )}
         />
       )}
+      <Modal
+        transparent
+        animationType="none"
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(false);
+        }}
+      >
+        <View style={styles.modalView}>
+          <ReAnimated.View
+            style={[styles.modalContent, { transform: [{ translateY }] }]}
+          >
+            <View style={styles.actions}>
+              <Button
+                type="link"
+                text="Cancel"
+                onPress={() => {
+                  translateY.value = withSpring(600);
+                  setTimeout(() => {
+                    setModalVisible(false);
+                  }, 300);
+                }}
+              />
+              <Button
+                type="link"
+                text="Okay"
+                onPress={addSelectedAudioToPlaylist}
+              />
+            </View>
+          </ReAnimated.View>
+        </View>
+      </Modal>
     </View>
   );
 };
