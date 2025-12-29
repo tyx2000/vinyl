@@ -79,7 +79,7 @@ const PlaylistDetails = () => {
     try {
       const [result] = await Promise.all([
         SecureStore.getItemAsync(playlistId as string),
-        new Promise((resolve) => setTimeout(resolve, 800)),
+        new Promise((resolve) => setTimeout(resolve, 500)),
       ]);
       if (result) {
         console.log(result);

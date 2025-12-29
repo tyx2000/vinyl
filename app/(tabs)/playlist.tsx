@@ -18,7 +18,7 @@ export default function Playlist() {
     try {
       const [result] = await Promise.all([
         SecureStore.getItemAsync("vinyl-playlist"),
-        new Promise((resolve) => setTimeout(resolve, 800)),
+        new Promise((resolve) => setTimeout(resolve, 500)),
       ]);
       if (result) {
         setPlaylist(JSON.parse(result));
