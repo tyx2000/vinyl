@@ -4,9 +4,10 @@ import Loading from "@/components/Loading";
 import PlaylistItem from "@/components/PlaylistItem";
 import { mainColor, secondColor } from "@/constants/Colors";
 import { useGlobalContext } from "@/context/GlobalContext";
+import useMounted from "@/hooks/useMounted";
+import { getLocalValue, minResolve } from "@/utils/helper";
 import { FlashList } from "@shopify/flash-list";
-import * as SecureStore from "expo-secure-store";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 export default function Playlist() {
@@ -16,10 +17,7 @@ export default function Playlist() {
   async function initPlaylist() {
     setLoading(true);
     try {
-      const [result] = await Promise.all([
-        SecureStore.getItemAsync("vinyl-playlist"),
-        new Promise((resolve) => setTimeout(resolve, 500)),
-      ]);
+      const result = await minResolve(getLocalValue("vinyl-playlist"));
       if (result) {
         setPlaylist(JSON.parse(result));
       }
@@ -30,9 +28,7 @@ export default function Playlist() {
     }
   }
 
-  useEffect(() => {
-    initPlaylist();
-  }, []);
+  useMounted(initPlaylist);
 
   function renderItem({
     item,

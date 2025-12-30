@@ -1,11 +1,13 @@
+import AudioList from "@/components/AudioList";
 import Button from "@/components/Button";
 import Empty from "@/components/Empty";
 import Loading from "@/components/Loading";
 import { mainColor } from "@/constants/Colors";
+import useMounted from "@/hooks/useMounted";
+import { getLocalValue, minResolve } from "@/utils/helper";
 import { FlashList } from "@shopify/flash-list";
 import { useLocalSearchParams, useNavigation } from "expo-router";
-import * as SecureStore from "expo-secure-store";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { Modal, StyleSheet, View } from "react-native";
 import ReAnimated, {
   useSharedValue,
@@ -36,7 +38,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     height: 600,
-    backgroundColor: "white",
+    backgroundColor: "#fff",
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
     padding: 35,
@@ -66,7 +68,7 @@ const PlaylistDetails = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedAudios, setSelectedAudios] = useState([]);
 
-  const translateY = useSharedValue(600);
+  const translateY = useSharedValue(700);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -77,10 +79,7 @@ const PlaylistDetails = () => {
   const getPlaylistAudios = async () => {
     setLoading(true);
     try {
-      const [result] = await Promise.all([
-        SecureStore.getItemAsync(playlistId as string),
-        new Promise((resolve) => setTimeout(resolve, 500)),
-      ]);
+      const result = await minResolve(getLocalValue(playlistId as string));
       if (result) {
         console.log(result);
       }
@@ -91,9 +90,7 @@ const PlaylistDetails = () => {
     }
   };
 
-  useEffect(() => {
-    getPlaylistAudios();
-  }, []);
+  useMounted(getPlaylistAudios);
 
   const addSelectedAudioToPlaylist = async () => {};
 
@@ -148,6 +145,7 @@ const PlaylistDetails = () => {
                 onPress={addSelectedAudioToPlaylist}
               />
             </View>
+            <AudioList />
           </ReAnimated.View>
         </View>
       </Modal>

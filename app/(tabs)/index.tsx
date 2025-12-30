@@ -1,11 +1,9 @@
 import AudioItem from "@/components/AudioItem";
-import Button from "@/components/Button";
-import Empty from "@/components/Empty";
-import Loading from "@/components/Loading";
+import AudioList from "@/components/AudioList";
 import { mainColor, secondColor } from "@/constants/Colors";
 import { useGlobalContext } from "@/context/GlobalContext";
-import { FlashList } from "@shopify/flash-list";
 import * as FileSystem from "expo-file-system/legacy";
+import { useFocusEffect } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
 import {
@@ -24,25 +22,6 @@ import ReAnimated, {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  listContainer: {
-    padding: 10,
-  },
-  divider: {
-    height: 5,
-  },
-  footer: {
-    height: 110,
-    marginTop: 20,
-    alignItems: "center",
-  },
-  footButton: {
-    color: "#fff",
-    borderRadius: 20,
-    backgroundColor: mainColor,
-    fontWeight: "bold",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
   },
   modalWrapper: {
     flex: 1,
@@ -88,11 +67,14 @@ const OPTION_ACTIONS = [
 ];
 
 const Home = () => {
-  const { audios, setAudios, loading, pickAudios, setPlayingAudio } =
-    useGlobalContext();
+  const { audios, setAudios, setPlayingAudio } = useGlobalContext();
   const [optionAudio, setOptionAudio] = useState<Record<string, string>>({});
 
   const translateY = useSharedValue(300);
+
+  useFocusEffect(() => {
+    console.log("index focus effect");
+  });
 
   const moreOptions = (
     e: GestureResponderEvent,
@@ -130,40 +112,9 @@ const Home = () => {
     }
   };
 
-  const renderItem = ({
-    item,
-    index,
-  }: {
-    item: Record<string, string>;
-    index: number;
-  }) => (
-    <AudioItem
-      item={item}
-      color={index % 2 === 0 ? mainColor : secondColor}
-      moreOptions={moreOptions}
-      setPlayingAudio={setPlayingAudio}
-    />
-  );
-
   return (
     <View style={styles.container}>
-      {loading ? (
-        <Loading />
-      ) : (
-        <FlashList
-          // onLoad={onload}
-          data={audios}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={<Empty />}
-          ItemSeparatorComponent={() => <View style={styles.divider}></View>}
-          ListFooterComponent={() => (
-            <View style={styles.footer}>
-              <Button text="Add more" onPress={pickAudios} />
-            </View>
-          )}
-        />
-      )}
+      <AudioList />
       <Modal
         transparent
         animationType="none"

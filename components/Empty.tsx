@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import ReAnimated, { FlipInEasyY } from "react-native-reanimated";
+import ReAnimated from "react-native-reanimated";
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -10,7 +10,7 @@ const styles = StyleSheet.create({
   },
   empty: {
     width: "80%",
-    height: 300,
+    height: 233,
     backgroundColor: "white",
     borderRadius: 20,
     padding: 35,
@@ -30,7 +30,7 @@ export default function Empty() {
   return (
     <View style={styles.wrapper}>
       <ReAnimated.View
-        entering={FlipInEasyY.springify()}
+        // entering={FlipInEasyY.springify()}
         style={styles.empty}
       ></ReAnimated.View>
     </View>

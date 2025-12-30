@@ -1,3 +1,4 @@
+import { mainColor, secondColor } from "@/constants/Colors";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -49,15 +50,14 @@ const styles = StyleSheet.create({
 
 export default function AudioItem({
   item,
-  color,
-  moreOptions,
+  // moreOptions,
   setPlayingAudio,
 }: {
-  color: string;
-  item: Record<string, string>;
-  moreOptions: Function;
+  item: Record<string, string | number>;
+  // moreOptions: Function;
   setPlayingAudio: Function;
 }) {
+  const color = (item.index as number) % 2 === 0 ? mainColor : secondColor;
   const rightActions = (
     progress: SharedValue<number>,
     drag: SharedValue<number>,
@@ -113,7 +113,7 @@ export default function AudioItem({
                 alignItems: "center",
                 justifyContent: "center",
               }}
-              onPress={(e) => moreOptions(e, item)}
+              // onPress={(e) => moreOptions(e, item)}
             >
               <FontAwesome size={24} name="ellipsis-v" />
             </TouchableOpacity>

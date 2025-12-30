@@ -13,6 +13,18 @@ const AUDIO_MIME_TYPES = [
 ];
 const AUDIO_EXTENSIONS = ["mp3", "mav", "m4a", "ogg", "flac", "aac"];
 
+export const minResolve = async <T>(
+  fn: Promise<T>,
+  min: number = 300,
+): Promise<T> => {
+  const waitTime = Math.max(0, min);
+  const [result] = await Promise.all([
+    fn,
+    new Promise((resolve) => setTimeout(resolve, waitTime)),
+  ]);
+  return result;
+};
+
 export const getLocalValue = async (key: string) => {
   return await SecureStore.getItemAsync(key);
 };
