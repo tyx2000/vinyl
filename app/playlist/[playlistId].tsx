@@ -1,11 +1,9 @@
 import AudioList from "@/components/AudioList";
 import Button from "@/components/Button";
-import Empty from "@/components/Empty";
 import Loading from "@/components/Loading";
 import { mainColor } from "@/constants/Colors";
 import useMounted from "@/hooks/useMounted";
 import { getLocalValue, minResolve } from "@/utils/helper";
-import { FlashList } from "@shopify/flash-list";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { useLayoutEffect, useState } from "react";
 import { Modal, StyleSheet, View } from "react-native";
@@ -92,35 +90,20 @@ const PlaylistDetails = () => {
 
   useMounted(getPlaylistAudios);
 
-  const addSelectedAudioToPlaylist = async () => {};
+  const addSelectedAudioToPlaylist = async () => {
+    setAudios((c) => [...c, ...selectedAudios]);
+    console.log({ selectedAudios });
+  };
 
   return (
     <View style={styles.wrapper}>
-      {loading ? (
-        <Loading />
-      ) : (
-        <FlashList
-          data={audios}
-          ListEmptyComponent={() => <Empty />}
-          renderItem={({ item, index }) => <View></View>}
-          ListFooterComponent={() => (
-            <View style={styles.footer}>
-              <Button
-                text="Add audios"
-                onPress={() => {
-                  setModalVisible(true);
-                  translateY.value = withSpring(0);
-                }}
-              />
-            </View>
-          )}
-        />
-      )}
+      {loading ? <Loading /> : <AudioList customData={audios} />}
       <Modal
         transparent
         animationType="none"
         visible={modalVisible}
         onRequestClose={() => {
+          setSelectedAudios([]);
           setModalVisible(false);
         }}
       >
@@ -133,6 +116,7 @@ const PlaylistDetails = () => {
                 type="link"
                 text="Cancel"
                 onPress={() => {
+                  setSelectedAudios([]);
                   translateY.value = withSpring(600);
                   setTimeout(() => {
                     setModalVisible(false);
@@ -145,7 +129,10 @@ const PlaylistDetails = () => {
                 onPress={addSelectedAudioToPlaylist}
               />
             </View>
-            <AudioList />
+            <AudioList
+              selectedAudios={selectedAudios}
+              setSelectedAudios={setSelectedAudios}
+            />
           </ReAnimated.View>
         </View>
       </Modal>

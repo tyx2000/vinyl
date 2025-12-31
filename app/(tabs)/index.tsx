@@ -1,6 +1,5 @@
-import AudioItem from "@/components/AudioItem";
 import AudioList from "@/components/AudioList";
-import { mainColor, secondColor } from "@/constants/Colors";
+import { mainColor } from "@/constants/Colors";
 import { useGlobalContext } from "@/context/GlobalContext";
 import * as FileSystem from "expo-file-system/legacy";
 import { useFocusEffect } from "expo-router";
@@ -67,7 +66,7 @@ const OPTION_ACTIONS = [
 ];
 
 const Home = () => {
-  const { audios, setAudios, setPlayingAudio } = useGlobalContext();
+  const { loading, libAudios, setAudios, setPlayingAudio } = useGlobalContext();
   const [optionAudio, setOptionAudio] = useState<Record<string, string>>({});
 
   const translateY = useSharedValue(300);
@@ -76,7 +75,7 @@ const Home = () => {
     console.log("index focus effect");
   });
 
-  const moreOptions = (
+  const showOptionModal = (
     e: GestureResponderEvent,
     item: Record<string, string>,
   ) => {
@@ -114,7 +113,7 @@ const Home = () => {
 
   return (
     <View style={styles.container}>
-      <AudioList />
+      <AudioList showOptionModal={showOptionModal} />
       <Modal
         transparent
         animationType="none"

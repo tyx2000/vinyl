@@ -1,15 +1,9 @@
+import { mainColor } from "@/constants/Colors";
 import { useGlobalContext } from "@/context/GlobalContext";
-import useMounted from "@/hooks/useMounted";
-import {
-  getLocalValue,
-  minResolve,
-  pickAudioFile,
-  setLocalValue,
-} from "@/utils/helper";
+import { FontAwesome } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { usePathname } from "expo-router";
-import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import AudioItem from "./AudioItem";
 import Button from "./Button";
 import Empty from "./Empty";
@@ -23,32 +17,77 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: 10,
   },
-  divider: { height: 10 },
-  footer: { height: 100, alignItems: "center", justifyContent: "center" },
+  divider: {
+    height: 10,
+  },
+  footer: {
+    height: 100,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  options: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: mainColor,
+    borderRadius: 3,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });
 
-const AudioList = () => {
+const AudioList = ({
+  customData,
+  showOptionModal,
+  selectedAudios,
+  setSelectedAudios,
+}: {
+  customData?: Record<string, string | number>[];
+  showOptionModal?: Function;
+  selectedAudios?: Record<string, string | number>[];
+  setSelectedAudios?: Function;
+}) => {
+  const { loading, audios, pickAudios, setPlayingAudio } = useGlobalContext();
   const pathname = usePathname();
-  console.log({ pathname });
-  const { setPlayingAudio } = useGlobalContext();
-  const [audios, setAudios] = useState<Record<string, string>[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  const initAudioList = async () => {
-    setLoading(true);
-    try {
-      const result = await minResolve(getLocalValue("vinyl-library"));
-      if (result) {
-        setAudios(JSON.parse(result));
-      }
-    } catch (error) {
-      console.log("initAudioList error", error);
-    } finally {
-      setLoading(false);
+  const renderRightAction = (item: Record<string, string | number>) => {
+    if (pathname === "/") {
+      return (
+        <TouchableOpacity
+          style={styles.options}
+          onPress={(e) => showOptionModal!(e, item)}
+        >
+          <FontAwesome size={24} name="ellipsis-v" />
+        </TouchableOpacity>
+      );
+    } else {
+      const selected = selectedAudios?.find((a) => a.uri === item.uri);
+      return (
+        <View style={styles.checkbox}>
+          {selected && <FontAwesome size={18} name="check" />}
+        </View>
+      );
     }
   };
 
-  useMounted(initAudioList);
+  const onPressItem = (item: Record<string, string | number>) => {
+    if (pathname === "/") {
+      setPlayingAudio(item);
+    } else {
+      const t = selectedAudios?.find((a) => a.uri === item.uri);
+      const k = t
+        ? selectedAudios?.filter((a) => a.uri !== item.uri)
+        : [...(selectedAudios || []), item];
+      console.log({ k });
+      setSelectedAudios!(k);
+    }
+  };
 
   const renderItem = ({
     index,
@@ -57,31 +96,13 @@ const AudioList = () => {
     index: number;
     item: Record<string, string>;
   }) => (
-    <AudioItem item={{ ...item, index }} setPlayingAudio={setPlayingAudio} />
+    <AudioItem
+      item={{ ...item, index }}
+      setPlayingAudio={setPlayingAudio}
+      renderRightAction={renderRightAction}
+      onPressItem={onPressItem}
+    />
   );
-
-  const pickAudios = async () => {
-    try {
-      const files = await pickAudioFile();
-      if (files) {
-        const newAudios: Record<string, string>[] = [],
-          uris = new Set();
-        [...audios, ...files].forEach((a) => {
-          if (uris.has(a.uri)) {
-            return;
-          } else {
-            uris.add(a.uri);
-            newAudios.push(a);
-          }
-        });
-
-        await setLocalValue("vinyl-library", JSON.stringify(newAudios));
-        setAudios(newAudios);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
   return (
     <View style={styles.wrapper}>
@@ -89,7 +110,7 @@ const AudioList = () => {
         <Loading />
       ) : (
         <FlashList
-          data={audios}
+          data={customData || audios}
           renderItem={renderItem}
           keyExtractor={(item) => item.uri}
           contentContainerStyle={styles.listContainer}

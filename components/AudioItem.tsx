@@ -1,5 +1,5 @@
 import { mainColor, secondColor } from "@/constants/Colors";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { ReactNode } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
@@ -50,12 +50,13 @@ const styles = StyleSheet.create({
 
 export default function AudioItem({
   item,
-  // moreOptions,
-  setPlayingAudio,
+  renderRightAction,
+  onPressItem,
 }: {
   item: Record<string, string | number>;
-  // moreOptions: Function;
   setPlayingAudio: Function;
+  onPressItem: (item: Record<string, string | number>) => void;
+  renderRightAction: (item: Record<string, string | number>) => ReactNode;
 }) {
   const color = (item.index as number) % 2 === 0 ? mainColor : secondColor;
   const rightActions = (
@@ -87,7 +88,7 @@ export default function AudioItem({
       renderRightActions={rightActions}
     >
       <GestureDetector gesture={longPressGesture}>
-        <TouchableOpacity onPress={() => setPlayingAudio(item)}>
+        <TouchableOpacity onPress={() => onPressItem(item)}>
           <ReAnimated.View
             entering={FlipInEasyX.springify()}
             exiting={FlipOutEasyX.springify()}
@@ -106,17 +107,7 @@ export default function AudioItem({
                 {item.name}
               </Text>
             </View>
-            <TouchableOpacity
-              style={{
-                width: 30,
-                height: 30,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              // onPress={(e) => moreOptions(e, item)}
-            >
-              <FontAwesome size={24} name="ellipsis-v" />
-            </TouchableOpacity>
+            {renderRightAction(item)}
           </ReAnimated.View>
         </TouchableOpacity>
       </GestureDetector>
