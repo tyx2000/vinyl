@@ -1,14 +1,15 @@
-import { useGlobalContext } from "@/context/GlobalContext";
-import { usePathname } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Button from "./Button";
 
-export default function Header() {
+export default function Header({
+  name,
+  handleRightButtonAction,
+}: {
+  name: string;
+  handleRightButtonAction: () => void;
+}) {
   const insets = useSafeAreaInsets();
-  const pathname = usePathname();
-  const { pickAudios, setModalName } = useGlobalContext();
-  const isHome = pathname === "/";
 
   // const requestMediaPermission = useCallback(async () => {
   //   try {
@@ -29,22 +30,11 @@ export default function Header() {
   //   }
   // }, []);
 
-  const handleHeaderButtonClick = () => {
-    if (isHome) {
-      pickAudios();
-    } else {
-      setModalName("playlist");
-    }
-  };
-
   return (
     <View style={[styles.wrapper, { paddingTop: insets.top }]}>
       <View style={styles.content}>
-        <Text style={styles.title}>{isHome ? "Library" : "Playlist"}</Text>
-        <Button
-          text={isHome ? "ADD" : "NEW"}
-          onPress={handleHeaderButtonClick}
-        />
+        <Text style={styles.title}>{name}</Text>
+        <Button text="Add" onPress={handleRightButtonAction} />
       </View>
     </View>
   );

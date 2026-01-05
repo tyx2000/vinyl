@@ -16,6 +16,7 @@ import ReAnimated, {
 const styles = StyleSheet.create({
   modalView: {
     flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
     margin: 20,

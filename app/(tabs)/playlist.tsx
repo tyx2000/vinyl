@@ -1,16 +1,13 @@
-import Button from "@/components/Button";
-import Empty from "@/components/Empty";
-import Loading from "@/components/Loading";
-import PlaylistItem from "@/components/PlaylistItem";
-import { mainColor, secondColor } from "@/constants/Colors";
+import Header from "@/components/Header";
+import List from "@/components/List";
 import { useGlobalContext } from "@/context/GlobalContext";
 import useMounted from "@/hooks/useMounted";
 import { getLocalValue, minResolve } from "@/utils/helper";
-import { FlashList } from "@shopify/flash-list";
-import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Fragment, useState } from "react";
 
 export default function Playlist() {
+  const router = useRouter();
   const { playlist, setPlaylist, setModalName } = useGlobalContext();
   const [loading, setLoading] = useState(false);
 
@@ -30,69 +27,23 @@ export default function Playlist() {
 
   useMounted(initPlaylist);
 
-  function renderItem({
-    item,
-    index,
-  }: {
-    index: number;
-    item: Record<string, string>;
-  }) {
-    return (
-      <PlaylistItem
-        item={item}
-        color={index % 2 === 0 ? mainColor : secondColor}
-        moreOptions={() => {}}
-        onPress={() => {}}
-      />
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      {loading ? (
-        <Loading />
-      ) : (
-        <FlashList
-          data={playlist}
-          renderItem={renderItem}
-          ListEmptyComponent={<Empty />}
-          contentContainerStyle={styles.listContainer}
-          ListFooterComponent={() => (
-            <View style={styles.footer}>
-              <Button
-                text="New playlist"
-                onPress={() => setModalName("playlist")}
-              />
-            </View>
-          )}
-          ItemSeparatorComponent={() => <View style={styles.divider}></View>}
-        />
-      )}
-    </View>
+    <Fragment>
+      <Header
+        name="Playlist"
+        handleRightButtonAction={() => {
+          setModalName("playlist");
+        }}
+      />
+      <List
+        type="playlist"
+        data={playlist}
+        loading={loading}
+        handleListItemPress={(item) => {
+          router.push(`/playlist/${item.id}?name=${item.name}`);
+        }}
+        handleListRightAction={(item) => {}}
+      />
+    </Fragment>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  listContainer: {
-    padding: 10,
-  },
-  divider: {
-    height: 5,
-  },
-  footer: {
-    height: 110,
-    marginTop: 20,
-    alignItems: "center",
-  },
-  footButton: {
-    color: "#fff",
-    borderRadius: 20,
-    backgroundColor: mainColor,
-    fontWeight: "bold",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-  },
-});
