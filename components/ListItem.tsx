@@ -1,6 +1,13 @@
 import { mainColor, secondColor } from "@/constants/Colors";
-import { ReactNode } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ReactNode, useRef } from "react";
+import {
+  findNodeHandle,
+  NativeSyntheticEvent,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import ReAnimated, {
@@ -57,6 +64,7 @@ const ListItem = ({
   onPressItem?: (item: Record<string, string | number>) => void;
   renderRightAction: (item: Record<string, string | number>) => ReactNode;
 }) => {
+  const itemRef = useRef<View>(null);
   const color = (item.index as number) % 2 === 0 ? mainColor : secondColor;
   const rightActions = (
     progress: SharedValue<number>,
@@ -73,11 +81,37 @@ const ListItem = ({
     );
   };
 
-  const longPressGesture = Gesture.LongPress().onEnd((e, success) => {
-    if (success) {
-      console.log(`longPressed for ${e.duration} ms`);
-    }
-  });
+  const longPressGesture = Gesture.LongPress()
+    .minDuration(3000)
+    .onBegin(() => {
+      console.log("touched");
+    })
+    .onStart(() => {
+      console.log("longPressed");
+    })
+    .onEnd((e, success) => {
+      if (success) {
+        console.log(`longPressed for ${e.duration} ms`);
+        console.log("====", itemRef.current);
+        if (itemRef.current) {
+          const handler = findNodeHandle(itemRef.current);
+          // itemRef.current.measure((a) => {
+          //   console.log({ a });
+          // });
+          itemRef.current.measureInWindow((b) => {
+            console.log({ b });
+          });
+        }
+      }
+    });
+
+  const handleLayout = (
+    e: NativeSyntheticEvent<{
+      layout: { x: number; y: number; width: number; height: number };
+    }>,
+  ) => {
+    console.log(e.nativeEvent.layout);
+  };
 
   return (
     <ReanimatedSwipeable
@@ -89,6 +123,8 @@ const ListItem = ({
       <GestureDetector gesture={longPressGesture}>
         <TouchableOpacity onPress={() => onPressItem && onPressItem(item)}>
           <ReAnimated.View
+            ref={itemRef}
+            onLayout={handleLayout}
             entering={FlipInEasyX.springify()}
             exiting={FlipOutEasyX.springify()}
             style={[styles.item, { borderColor: color }]}

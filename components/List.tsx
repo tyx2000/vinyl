@@ -56,7 +56,7 @@ const List = ({
   type?: string;
   loading?: boolean;
   selectedData?: Record<string, string | number>[];
-  data: Record<string, string>[];
+  data: Record<string, string | number>[];
   handleListRightAction: (audio: Record<string, string | number>) => void;
   handleListItemPress: (audio: Record<string, string | number>) => void;
 }) => {
@@ -113,7 +113,7 @@ const List = ({
         <FlashList
           data={data}
           renderItem={renderItem}
-          keyExtractor={(item) => item.uri}
+          keyExtractor={(item) => item.uri + ""}
           contentContainerStyle={styles.listContainer}
           ListEmptyComponent={<Empty />}
           ItemSeparatorComponent={() => <View style={styles.divider} />}

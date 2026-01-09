@@ -4,7 +4,7 @@ import SelectAudioModal from "@/components/SelectAudioModal";
 import { mainColor } from "@/constants/Colors";
 import { useGlobalContext } from "@/context/GlobalContext";
 import useMounted from "@/hooks/useMounted";
-import { getLocalValue, minResolve } from "@/utils/helper";
+import { getLocalValue, minResolve, setLocalValue } from "@/utils/helper";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -37,7 +37,7 @@ const PlaylistDetails = () => {
   const { setPlayingAudio } = useGlobalContext();
   const { name, playlistId } = useLocalSearchParams();
   const [loading, setLoading] = useState(false);
-  const [audios, setAudios] = useState([]);
+  const [audios, setAudios] = useState<Record<string, string | number>[]>([]);
   const [visible, setVisible] = useState(false);
 
   const getPlaylistAudios = async () => {
@@ -56,7 +56,13 @@ const PlaylistDetails = () => {
 
   useMounted(getPlaylistAudios);
 
-  const handleAddAudios = (audios: Record<string, string | number>[]) => {};
+  const handleAddAudios = async (audios: Record<string, string | number>[]) => {
+    setVisible(false);
+    if (audios && audios.length > 0) {
+      await setLocalValue(playlistId + "", JSON.stringify(audios));
+      setAudios(audios);
+    }
+  };
 
   return (
     <View style={styles.wrapper}>

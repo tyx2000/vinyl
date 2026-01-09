@@ -102,9 +102,7 @@ const SelectAudioModal = ({
               type="link"
               text="Okay"
               onPress={() => {
-                if (selectedAudios.length > 0) {
-                  onOk(selectedAudios);
-                }
+                onOk(selectedAudios);
               }}
             />
           </View>
