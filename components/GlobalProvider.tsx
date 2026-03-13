@@ -6,7 +6,7 @@ import {
   pickAudioFile,
   setLocalValue,
 } from "@/utils/helper";
-import * as FileSystem from "expo-file-system/legacy";
+import { File } from "expo-file-system";
 import { ReactNode, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import AudioOptionsModal from "./AudioOptionsModal";
@@ -29,6 +29,11 @@ export default function GlobalProvider({ children }: { children: ReactNode }) {
   const [playingAudio, setPlayingAudio] = useState<Record<string, string>>({});
   const [playlist, setPlaylist] = useState<Record<string, string>[]>([]);
   const [modalName, setModalName] = useState("");
+
+  // 当前播放列表
+  const [currentPlaylist, setCurrentPlaylist] = useState<
+    Record<string, string | number>[]
+  >([]);
 
   const initAudios = async () => {
     setLoading(true);
@@ -81,7 +86,9 @@ export default function GlobalProvider({ children }: { children: ReactNode }) {
         (a: Record<string, string>) => a.uri !== optionAudio.uri,
       );
       await setLocalValue("vinyl-library", JSON.stringify(t));
-      await FileSystem.deleteAsync(optionAudio.uri as string);
+      if (optionAudio.uri) {
+        new File(optionAudio.uri as string).delete();
+      }
       setAudios(t);
 
       setOptionAudio({});

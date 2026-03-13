@@ -1,6 +1,5 @@
 import * as DocumentPicker from "expo-document-picker";
-import { Paths } from "expo-file-system";
-import * as FileSystem from "expo-file-system/legacy";
+import { Directory, File, Paths } from "expo-file-system";
 import * as SecureStore from "expo-secure-store";
 
 const AUDIO_MIME_TYPES = [
@@ -11,7 +10,7 @@ const AUDIO_MIME_TYPES = [
   "audio/flac",
   "audio/aac",
 ];
-const AUDIO_EXTENSIONS = ["mp3", "mav", "m4a", "ogg", "flac", "aac"];
+const AUDIO_EXTENSIONS = ["mp3", "wav", "m4a", "ogg", "flac", "aac"];
 
 export const minResolve = async <T>(
   fn: Promise<T>,
@@ -40,7 +39,7 @@ export const pickAudioFile = async (): Promise<
     const result = await DocumentPicker.getDocumentAsync({
       type: AUDIO_MIME_TYPES,
       multiple: true,
-      copyToCacheDirectory: false,
+      copyToCacheDirectory: true,
     });
     if (result.canceled) {
       return;
@@ -51,40 +50,25 @@ export const pickAudioFile = async (): Promise<
       if (!fileExt || !AUDIO_EXTENSIONS.includes(fileExt)) {
         continue;
       }
-      const audioRootDir = Paths.join(
-        FileSystem.documentDirectory as string,
-        "vinylAudios",
-      );
-      const audioSavePath = Paths.join(
-        audioRootDir,
-        `${Date.now()}-${asset.name}`,
-      );
-      const fileInfo = await FileSystem.getInfoAsync(audioSavePath);
-      if (fileInfo.exists && fileInfo.size !== 0) {
-        // if (fileInfo.isDirectory) {
-        //   await FileSystem.deleteAsync(audioSavePath)
-        // } else {
-        //   await FileSystem.deleteAsync(audioSavePath)
-        // }
-        await FileSystem.deleteAsync(audioSavePath);
+      const audioRootDir = new Directory(Paths.document, "vinylAudios");
+      if (!audioRootDir.exists) {
+        audioRootDir.create({ idempotent: true, intermediates: true });
       }
-      const dirInfo = await FileSystem.getInfoAsync(audioRootDir);
-      if (!dirInfo.exists) {
-        await FileSystem.makeDirectoryAsync(audioRootDir, {
-          intermediates: true,
-        });
+
+      const audioFile = new File(audioRootDir, `${Date.now()}-${asset.name}`);
+      if (audioFile.exists && audioFile.size !== 0) {
+        audioFile.delete();
       }
-      await FileSystem.copyAsync({
-        from: asset.uri,
-        to: audioSavePath,
-      });
-      const finalFileInfo = await FileSystem.getInfoAsync(audioSavePath);
-      if (!finalFileInfo.exists || finalFileInfo.size === 0) {
+
+      const sourceFile = new File(asset.uri);
+      sourceFile.copy(audioFile);
+
+      if (!audioFile.exists || audioFile.size === 0) {
         throw new Error("copy file failed, file is empty");
       }
       files.push({
         name: asset.name,
-        uri: audioSavePath,
+        uri: audioFile.uri,
       });
     }
     return files;
