@@ -1,4 +1,5 @@
-import { mainColor } from "@/constants/Colors";
+import { divider, mainColor } from "@/constants/Colors";
+import { AudioLike } from "@/context/types";
 import { FontAwesome } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
@@ -12,55 +13,57 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContainer: {
-    padding: 10,
+    paddingHorizontal: 14,
+    paddingTop: 8,
+    paddingBottom: 160,
+    backgroundColor: "transparent",
+  },
+  flashList: {
+    flex: 1,
+    backgroundColor: "transparent",
   },
   divider: {
-    height: 10,
-  },
-  footer: {
-    height: 100,
-    alignItems: "center",
-    justifyContent: "center",
+    height: 0,
   },
   options: {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: 14,
+    backgroundColor: "rgba(250, 45, 85, 0.04)",
+    borderWidth: 1,
+    borderColor: divider,
   },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
+    width: 24,
+    height: 24,
+    borderWidth: 1,
     borderColor: mainColor,
-    borderRadius: 3,
+    borderRadius: 999,
     justifyContent: "center",
     alignItems: "center",
   },
 });
-
-const footButtonText: Record<string, string> = {
-  audioList: "Add more",
-  playlist: "New playlist",
-  selectAudio: "Add more",
-};
 
 const List = ({
   type = "audioList",
   loading,
   data,
   selectedData = [],
+  playingUri,
   handleListRightAction,
   handleListItemPress,
 }: {
   type?: string;
   loading?: boolean;
-  selectedData?: Record<string, string | number>[];
-  data: Record<string, string | number>[];
-  handleListRightAction: (audio: Record<string, string | number>) => void;
-  handleListItemPress: (audio: Record<string, string | number>) => void;
+  selectedData?: AudioLike[];
+  playingUri?: string;
+  data: AudioLike[];
+  handleListRightAction: (audio: AudioLike) => void;
+  handleListItemPress: (audio: AudioLike) => void;
 }) => {
-  const renderRightAction = (item: Record<string, string | number>) => {
+  const renderRightAction = (item: AudioLike) => {
     if (type === "audioList") {
       return (
         <TouchableOpacity
@@ -70,7 +73,7 @@ const List = ({
             handleListRightAction(item);
           }}
         >
-          <FontAwesome size={24} name="ellipsis-v" />
+          <FontAwesome size={16} color={mainColor} name="ellipsis-h" />
         </TouchableOpacity>
       );
     }
@@ -84,7 +87,7 @@ const List = ({
           }}
         >
           <View style={styles.checkbox}>
-            {selected && <FontAwesome size={18} name="check" />}
+            {selected && <FontAwesome size={14} color={mainColor} name="check" />}
           </View>
         </TouchableOpacity>
       );
@@ -95,13 +98,14 @@ const List = ({
     item,
     index,
   }: {
-    item: Record<string, string | number>;
+    item: AudioLike;
     index: number;
   }) => (
     <ListItem
       item={{ ...item, index }}
       onPressItem={handleListItemPress}
       renderRightAction={renderRightAction}
+      isActive={typeof item.uri === "string" && item.uri === playingUri}
     />
   );
 
@@ -111,10 +115,14 @@ const List = ({
         <Loading />
       ) : (
         <FlashList
+          style={styles.flashList}
           data={data}
           renderItem={renderItem}
-          keyExtractor={(item) => item.uri + ""}
+          keyExtractor={(item, index) =>
+            String(item.id ?? item.uri ?? `row-${index}`)
+          }
           contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={<Empty />}
           ItemSeparatorComponent={() => <View style={styles.divider} />}
         />

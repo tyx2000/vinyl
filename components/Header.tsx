@@ -1,3 +1,4 @@
+import { divider, textPrimary } from "@/constants/Colors";
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Button from "./Button";
@@ -42,20 +43,27 @@ export default function Header({
 
 const styles = StyleSheet.create({
   wrapper: {
-    height: 100,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    height: 112,
+    paddingHorizontal: 14,
+    paddingBottom: 8,
   },
   content: {
     flex: 1,
+    borderRadius: 16,
     paddingHorizontal: 20,
+    // borderWidth: 1,
+    // borderColor: "#DEE2EB",
+    // backgroundColor: "#F3F5FA",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    // borderBottomWidth: 1,
+    // borderBottomColor: divider,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "bold",
+    color: textPrimary,
+    fontSize: 32,
+    fontWeight: "800",
+    letterSpacing: -0.7,
   },
 });

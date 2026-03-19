@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import List from "@/components/List";
+import PageBackground from "@/components/PageBackground";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { useFocusEffect } from "expo-router";
 import { View } from "react-native";
@@ -9,7 +10,8 @@ const Home = () => {
     loading,
     audios,
     addAudios,
-    setPlayingAudio,
+    playingAudio,
+    playFromQueue,
     setOptionAudio,
     setModalName,
   } = useGlobalContext();
@@ -19,20 +21,26 @@ const Home = () => {
   });
 
   return (
-    <View style={{ flex: 1 }}>
-      <Header name="Library" handleRightButtonAction={addAudios} />
-      <List
-        loading={loading}
-        data={audios}
-        handleListItemPress={(item) => {
-          setPlayingAudio(item);
-        }}
-        handleListRightAction={(item: Record<string, string | number>) => {
-          setOptionAudio(item);
-          setModalName("audioOption");
-        }}
-      />
-    </View>
+    <PageBackground>
+      <View style={{ flex: 1 }}>
+        <Header name="Library" handleRightButtonAction={addAudios} />
+        <List
+          loading={loading}
+          data={audios}
+          playingUri={
+            typeof playingAudio.uri === "string" ? playingAudio.uri : undefined
+          }
+          handleListItemPress={(item) => {
+            const targetIndex = audios.findIndex((audio) => audio.uri === item.uri);
+            playFromQueue(audios, targetIndex < 0 ? 0 : targetIndex);
+          }}
+          handleListRightAction={(item) => {
+            setOptionAudio(item);
+            setModalName("audioOption");
+          }}
+        />
+      </View>
+    </PageBackground>
   );
 };
 

@@ -1,57 +1,57 @@
-import { mainColor, secondColor } from "@/constants/Colors";
-import { ReactNode, useRef } from "react";
-import {
-  findNodeHandle,
-  NativeSyntheticEvent,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
-import ReAnimated, {
-  FlipInEasyX,
-  FlipOutEasyX,
-  SharedValue,
-  useAnimatedStyle,
-} from "react-native-reanimated";
+import { mainColor, textPrimary, textSecondary } from "@/constants/Colors";
+import { AudioLike } from "@/context/types";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { ReactNode } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import ReAnimated, { FadeInRight, FadeOutLeft } from "react-native-reanimated";
 
 const styles = StyleSheet.create({
   item: {
-    borderLeftWidth: 4,
-    height: 45,
-    padding: 10,
+    minHeight: 56,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 20,
-    backgroundColor: "#fafafa",
+    gap: 12,
+    backgroundColor: "transparent",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(24,24,32,0.08)",
   },
   audioInfo: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
   },
   audioName: {
     flex: 1,
-    height: 40,
-    lineHeight: 40,
-    fontWeight: "bold",
+    color: textPrimary,
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: "700",
+  },
+  audioNameActive: {
+    color: mainColor,
   },
   dragHandler: {
-    width: 30,
-    height: 30,
+    width: 18,
+    height: 18,
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
+    gap: 3,
+    opacity: 0.7,
   },
   dragIcon: {
-    width: 16,
-    height: 4,
-    borderRadius: 3,
-    backgroundColor: "#ccc",
+    width: 8,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: textSecondary,
+  },
+  playingIcon: {
+    width: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 
@@ -59,94 +59,45 @@ const ListItem = ({
   item,
   renderRightAction,
   onPressItem,
+  isActive = false,
 }: {
-  item: Record<string, string | number>;
-  onPressItem?: (item: Record<string, string | number>) => void;
-  renderRightAction: (item: Record<string, string | number>) => ReactNode;
+  item: AudioLike;
+  onPressItem?: (item: AudioLike) => void;
+  renderRightAction: (item: AudioLike) => ReactNode;
+  isActive?: boolean;
 }) => {
-  const itemRef = useRef<View>(null);
-  const color = (item.index as number) % 2 === 0 ? mainColor : secondColor;
-  const rightActions = (
-    progress: SharedValue<number>,
-    drag: SharedValue<number>,
-  ) => {
-    const styleAnimation = useAnimatedStyle(() => {
-      // console.log(progress.value, drag.value);
-      return { transform: [{ translateX: drag.value + 50 }] };
-    });
-    return (
-      <ReAnimated.View style={styleAnimation}>
-        <Text>Text</Text>
-      </ReAnimated.View>
-    );
-  };
-
-  const longPressGesture = Gesture.LongPress()
-    .minDuration(3000)
-    .onBegin(() => {
-      console.log("touched");
-    })
-    .onStart(() => {
-      console.log("longPressed");
-    })
-    .onEnd((e, success) => {
-      if (success) {
-        console.log(`longPressed for ${e.duration} ms`);
-        console.log("====", itemRef.current);
-        if (itemRef.current) {
-          const handler = findNodeHandle(itemRef.current);
-          // itemRef.current.measure((a) => {
-          //   console.log({ a });
-          // });
-          itemRef.current.measureInWindow((b) => {
-            console.log({ b });
-          });
-        }
-      }
-    });
-
-  const handleLayout = (
-    e: NativeSyntheticEvent<{
-      layout: { x: number; y: number; width: number; height: number };
-    }>,
-  ) => {
-    console.log(e.nativeEvent.layout);
-  };
-
   return (
-    <ReanimatedSwipeable
-      friction={2}
-      enableTrackpadTwoFingerGesture
-      rightThreshold={40}
-      renderRightActions={rightActions}
+    <TouchableOpacity
+      onPress={() => onPressItem && onPressItem(item)}
+      activeOpacity={0.72}
     >
-      <GestureDetector gesture={longPressGesture}>
-        <TouchableOpacity onPress={() => onPressItem && onPressItem(item)}>
-          <ReAnimated.View
-            ref={itemRef}
-            onLayout={handleLayout}
-            entering={FlipInEasyX.springify()}
-            exiting={FlipOutEasyX.springify()}
-            style={[styles.item, { borderColor: color }]}
-          >
-            <View style={styles.audioInfo}>
-              <View style={styles.dragHandler}>
-                <View style={styles.dragIcon}></View>
-                <View style={styles.dragIcon}></View>
-              </View>
-              <Text
-                style={styles.audioName}
-                numberOfLines={1}
-                ellipsizeMode="middle"
-              >
-                {item.name}
-              </Text>
+      <ReAnimated.View
+        entering={FadeInRight.duration(220)}
+        exiting={FadeOutLeft.duration(160)}
+        style={styles.item}
+      >
+        <View style={styles.audioInfo}>
+          {isActive ? (
+            <View style={styles.playingIcon}>
+              <FontAwesome name="volume-up" size={14} color={mainColor} />
             </View>
-            {renderRightAction(item)}
-          </ReAnimated.View>
-        </TouchableOpacity>
-      </GestureDetector>
-    </ReanimatedSwipeable>
+          ) : (
+            <View style={styles.dragHandler}>
+              <View style={styles.dragIcon}></View>
+              <View style={styles.dragIcon}></View>
+            </View>
+          )}
+          <Text
+            style={[styles.audioName, isActive && styles.audioNameActive]}
+            numberOfLines={1}
+            ellipsizeMode="middle"
+          >
+            {item.name}
+          </Text>
+        </View>
+        {renderRightAction(item)}
+      </ReAnimated.View>
+    </TouchableOpacity>
   );
 };
 

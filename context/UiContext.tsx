@@ -1,0 +1,51 @@
+import { AudioLike } from "@/context/types";
+import {
+  Dispatch,
+  ReactNode,
+  SetStateAction,
+  createContext,
+  useContext,
+  useState,
+} from "react";
+
+type UiContextValue = {
+  modalName: string;
+  setModalName: Dispatch<SetStateAction<string>>;
+  optionAudio: AudioLike;
+  setOptionAudio: Dispatch<SetStateAction<AudioLike>>;
+  closeModal: () => void;
+};
+
+const UiContext = createContext<UiContextValue | null>(null);
+
+export function UiProvider({ children }: { children: ReactNode }) {
+  const [modalName, setModalName] = useState("");
+  const [optionAudio, setOptionAudio] = useState<AudioLike>({});
+
+  const closeModal = () => {
+    setModalName("");
+    setOptionAudio({});
+  };
+
+  return (
+    <UiContext.Provider
+      value={{
+        modalName,
+        setModalName,
+        optionAudio,
+        setOptionAudio,
+        closeModal,
+      }}
+    >
+      {children}
+    </UiContext.Provider>
+  );
+}
+
+export function useUiContext() {
+  const context = useContext(UiContext);
+  if (!context) {
+    throw new Error("useUiContext must be used within UiProvider");
+  }
+  return context;
+}

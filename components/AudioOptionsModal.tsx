@@ -1,6 +1,6 @@
-import { mainColor } from "@/constants/Colors";
-import { useEffect, useState } from "react";
-import { Modal, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { divider, mainColor, textPrimary } from "@/constants/Colors";
+import { useEffect, useRef, useState } from "react";
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity } from "react-native";
 import ReAnimated, {
   useSharedValue,
   withSpring,
@@ -11,37 +11,44 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    paddingHorizontal: 12,
+    paddingBottom: 14,
   },
   modalContent: {
-    height: 300,
-    backgroundColor: "white",
-    borderTopLeftRadius: 50,
-    borderTopRightRadius: 50,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-    gap: 10,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 22,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#DEE2EB",
+    backgroundColor: "#FFFFFF",
   },
   option: {
     width: "100%",
-    height: 50,
-    borderLeftWidth: 5,
-    borderLeftColor: "purple",
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: "#F3F5FA",
+    borderWidth: 1,
+    borderColor: divider,
     justifyContent: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   optionLabel: {
-    fontWeight: "bold",
-    fontSize: 18,
-    color: mainColor,
+    fontWeight: "700",
+    fontSize: 16,
+    color: textPrimary,
+  },
+  closeOption: {
+    backgroundColor: mainColor,
+    borderColor: mainColor,
+  },
+  closeLabel: {
+    color: "#fff",
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(15,18,30,0.16)",
   },
 });
 
@@ -59,26 +66,35 @@ const AudioOptionsModal = ({
   handleOptionAction: (action: string) => void;
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const wrapperBgc = useSharedValue("transparent");
   const translateY = useSharedValue(300);
 
   useEffect(() => {
     if (visible) {
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
       setModalVisible(true);
-      wrapperBgc.value = withTiming("rgba(0, 0, 0, 0.5)");
+      wrapperBgc.value = withTiming("rgba(18, 18, 24, 0.22)");
       translateY.value = withSpring(0);
     } else {
-      wrapperBgc.value = withTiming("transparent", {}, (finished) => {
-        if (finished) {
-          console.log("finished");
-        }
-      });
+      wrapperBgc.value = withTiming("transparent");
       translateY.value = withSpring(300);
-      setTimeout(() => {
+      hideTimerRef.current = setTimeout(() => {
         setModalVisible(false);
+        hideTimerRef.current = null;
       }, 300);
     }
+
+    return () => {
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
+    };
   }, [visible]);
 
   return (
@@ -87,22 +103,30 @@ const AudioOptionsModal = ({
       animationType="none"
       visible={modalVisible}
       onRequestClose={() => {
-        return;
+        handleOptionAction("close");
       }}
     >
       <ReAnimated.View
         style={[styles.wrapper, { backgroundColor: wrapperBgc }]}
       >
+        <Pressable style={styles.backdrop} onPress={() => handleOptionAction("close")} />
         <ReAnimated.View
           style={[styles.modalContent, { transform: [{ translateY }] }]}
         >
           {OPTION_ACTIONS.map((action) => (
             <TouchableOpacity
               key={action.id}
-              style={styles.option}
+              style={[styles.option, action.id === "close" && styles.closeOption]}
               onPress={() => handleOptionAction(action.id)}
             >
-              <Text style={styles.optionLabel}>{action.label}</Text>
+              <Text
+                style={[
+                  styles.optionLabel,
+                  action.id === "close" && styles.closeLabel,
+                ]}
+              >
+                {action.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </ReAnimated.View>

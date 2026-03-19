@@ -1,4 +1,4 @@
-import { mainColor } from "@/constants/Colors";
+import { divider, mainColor, textPrimary } from "@/constants/Colors";
 import { useEffect, useState } from "react";
 import {
   Modal,
@@ -16,48 +16,67 @@ import ReAnimated, {
 const styles = StyleSheet.create({
   modalView: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    backgroundColor: "rgba(15,18,30,0.16)",
   },
   modalContent: {
-    margin: 20,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
+    borderRadius: 16,
+    padding: 20,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#DEE2EB",
+    backgroundColor: "#FFFFFF",
   },
   playlistNameInput: {
     width: "100%",
-    borderWidth: 2,
-    borderColor: mainColor,
-    borderRadius: 20,
-    fontWeight: "bold",
+    borderWidth: 1,
+    borderColor: divider,
+    borderRadius: 14,
+    backgroundColor: "#F3F5FA",
+    color: textPrimary,
+    fontWeight: "700",
     fontSize: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   modalActions: {
-    marginTop: 35,
+    marginTop: 18,
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 50,
+    justifyContent: "space-between",
+    width: "100%",
+    gap: 12,
   },
   baseButton: {
-    width: 90,
+    width: "100%",
     textAlign: "center",
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: mainColor,
+    borderColor: divider,
+    backgroundColor: "#F3F5FA",
+    overflow: "hidden",
+    fontWeight: "700",
+    color: textPrimary,
   },
   okButton: {
     backgroundColor: mainColor,
+    borderColor: mainColor,
     color: "#fff",
+  },
+  actionItem: {
+    flex: 1,
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  title: {
+    width: "100%",
+    fontSize: 22,
+    fontWeight: "800",
+    color: textPrimary,
+    marginBottom: 12,
+    letterSpacing: -0.4,
   },
 });
 
@@ -76,6 +95,7 @@ const NewPlaylistModal = ({
 
   const handleModalActions = (action: string) => {
     if (action === "Cancel") {
+      setName("");
       translateY.value = withSpring(-250, {}, (done) => {
         if (done) {
           console.log("动画完成");
@@ -86,6 +106,7 @@ const NewPlaylistModal = ({
       }, 300);
     } else {
       onOk(name);
+      setName("");
     }
   };
 
@@ -117,19 +138,24 @@ const NewPlaylistModal = ({
         <ReAnimated.View
           style={[styles.modalContent, { transform: [{ translateY }] }]}
         >
+          <Text style={styles.title}>New Playlist</Text>
           <TextInput
             autoFocus
             style={styles.playlistNameInput}
-            textAlign="center"
+            textAlign="left"
             maxLength={12}
             onChange={({ nativeEvent: { text } }) => {
               setName(text);
             }}
+            placeholder="Name your playlist"
+            placeholderTextColor="rgba(31, 31, 40, 0.4)"
+            value={name}
           />
           <View style={styles.modalActions}>
-            {["Cancel", "OOOOK"].map((text) => (
+            {["Cancel", "OK"].map((text) => (
               <TouchableOpacity
                 key={text}
+                style={styles.actionItem}
                 onPress={() => handleModalActions(text)}
               >
                 <Text

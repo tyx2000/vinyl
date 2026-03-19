@@ -1,4 +1,5 @@
-import { StyleSheet, View } from "react-native";
+import { textSecondary } from "@/constants/Colors";
+import { StyleSheet, Text, View } from "react-native";
 import ReAnimated from "react-native-reanimated";
 
 const styles = StyleSheet.create({
@@ -6,33 +7,32 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 40,
+    paddingVertical: 24,
   },
   empty: {
-    width: "80%",
-    height: 233,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
+    width: "100%",
+    minHeight: 180,
+    borderRadius: 16,
+    padding: 22,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#DEE2EB",
+    backgroundColor: "#F3F5FA",
+  },
+  message: {
+    color: textSecondary,
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
 
 export default function Empty() {
   return (
     <View style={styles.wrapper}>
-      <ReAnimated.View
-        // entering={FlipInEasyY.springify()}
-        style={styles.empty}
-      ></ReAnimated.View>
+      <ReAnimated.View style={styles.empty}>
+        <Text style={styles.message}>No songs yet. Import from your library.</Text>
+      </ReAnimated.View>
     </View>
   );
 }

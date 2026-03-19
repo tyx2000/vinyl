@@ -1,11 +1,29 @@
-import { mainColor } from "@/constants/Colors";
+import { mainColor, textSecondary } from "@/constants/Colors";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 
 const styles = StyleSheet.create({
   button: {
-    paddingHorizontal: 15,
-    paddingVertical: 6,
-    borderRadius: 20,
+    minWidth: 72,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  solid: {
+    backgroundColor: mainColor,
+    shadowColor: mainColor,
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  link: {
+    backgroundColor: "transparent",
+  },
+  text: {
+    fontSize: 14,
+    fontWeight: "700",
   },
 });
 
@@ -19,13 +37,13 @@ const Button = ({
   onPress: Function;
 }) => (
   <TouchableOpacity
-    style={[
-      styles.button,
-      { backgroundColor: type === "link" ? "transparent" : mainColor },
-    ]}
+    style={[styles.button, type === "link" ? styles.link : styles.solid]}
     onPress={() => onPress()}
+    activeOpacity={0.75}
   >
-    <Text style={{ color: type === "link" ? mainColor : "#fff" }}>{text}</Text>
+    <Text style={[styles.text, { color: type === "link" ? textSecondary : "#fff" }]}>
+      {text}
+    </Text>
   </TouchableOpacity>
 );
 

@@ -1,4 +1,5 @@
 import GlobalProvider from "@/components/GlobalProvider";
+import { bgEnd, mainColor, textPrimary } from "@/constants/Colors";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import {
   DarkTheme,
@@ -55,9 +56,20 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const lightTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: bgEnd,
+      primary: mainColor,
+      text: textPrimary,
+      border: "rgba(255,255,255,0.6)",
+      card: "rgba(255,255,255,0.65)",
+    },
+  };
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : lightTheme}>
       <SafeAreaProvider>
         <GestureHandlerRootView>
           <GlobalProvider>
@@ -68,7 +80,7 @@ function RootLayoutNav() {
             </Stack>
           </GlobalProvider>
         </GestureHandlerRootView>
-        <StatusBar style="dark" />
+        <StatusBar style="dark" translucent />
       </SafeAreaProvider>
     </ThemeProvider>
   );

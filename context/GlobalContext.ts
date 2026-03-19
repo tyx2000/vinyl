@@ -1,7 +1,18 @@
-import { createContext, useContext } from "react";
+import { useLibraryContext } from "./LibraryContext";
+import { usePlayerContext } from "./PlayerContext";
+import { usePlaylistContext } from "./PlaylistContext";
+import { useUiContext } from "./UiContext";
 
-let values: Record<string, any> = {};
+export const useGlobalContext = () => {
+  const libraryContext = useLibraryContext();
+  const playerContext = usePlayerContext();
+  const playlistContext = usePlaylistContext();
+  const uiContext = useUiContext();
 
-export const GlobalContext = createContext(values);
-
-export const useGlobalContext = () => useContext(GlobalContext);
+  return {
+    ...libraryContext,
+    ...playerContext,
+    ...playlistContext,
+    ...uiContext,
+  };
+};

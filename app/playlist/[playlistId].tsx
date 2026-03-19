@@ -1,51 +1,34 @@
 import Header from "@/components/Header";
 import List from "@/components/List";
+import PageBackground from "@/components/PageBackground";
 import SelectAudioModal from "@/components/SelectAudioModal";
-import { mainColor } from "@/constants/Colors";
 import { useGlobalContext } from "@/context/GlobalContext";
+import { AudioItem } from "@/context/types";
 import useMounted from "@/hooks/useMounted";
-import { getLocalValue, minResolve, setLocalValue } from "@/utils/helper";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
-
-const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    // transform: [{ scale: 0.9 }],
-  },
-  footer: {
-    height: 110,
-    marginTop: 20,
-    alignItems: "center",
-  },
-  footButton: {
-    color: "#fff",
-    borderRadius: 20,
-    backgroundColor: mainColor,
-    fontWeight: "bold",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-  },
-  modalView: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-});
+import { View } from "react-native";
 
 const PlaylistDetails = () => {
-  const { setPlayingAudio } = useGlobalContext();
+  const {
+    playFromQueue,
+    playingAudio,
+    loadPlaylistAudios,
+    addAudiosToPlaylist,
+    setOptionAudio,
+    setModalName,
+  } = useGlobalContext();
   const { name, playlistId } = useLocalSearchParams();
   const [loading, setLoading] = useState(false);
-  const [audios, setAudios] = useState<Record<string, string | number>[]>([]);
+  const [audios, setAudios] = useState<AudioItem[]>([]);
   const [visible, setVisible] = useState(false);
 
   const getPlaylistAudios = async () => {
     setLoading(true);
     try {
-      const result = await minResolve(getLocalValue(playlistId as string));
-      if (result) {
-        setAudios(JSON.parse(result));
+      if (typeof playlistId === "string") {
+        const result = await loadPlaylistAudios(playlistId);
+        setAudios(result);
       }
     } catch (error) {
       console.log("getPlaylistDetails error", error);
@@ -56,38 +39,47 @@ const PlaylistDetails = () => {
 
   useMounted(getPlaylistAudios);
 
-  const handleAddAudios = async (audios: Record<string, string | number>[]) => {
+  const handleAddAudios = async (nextAudios: AudioItem[]) => {
     setVisible(false);
-    if (audios && audios.length > 0) {
-      await setLocalValue(playlistId + "", JSON.stringify(audios));
-      setAudios(audios);
+    if (typeof playlistId === "string" && nextAudios.length > 0) {
+      const merged = await addAudiosToPlaylist(playlistId, nextAudios);
+      setAudios(merged.audios);
     }
   };
 
   return (
-    <View style={styles.wrapper}>
-      <Header
-        name={name as string}
-        handleRightButtonAction={() => {
-          setVisible(true);
-        }}
-      />
-      <List
-        data={audios}
-        loading={loading}
-        handleListItemPress={(item) => {
-          setPlayingAudio(item);
-        }}
-        handleListRightAction={(item) => {}}
-      />
-      <SelectAudioModal
-        visible={visible}
-        onCancel={() => {
-          setVisible(false);
-        }}
-        onOk={handleAddAudios}
-      />
-    </View>
+    <PageBackground>
+      <View style={{ flex: 1 }}>
+        <Header
+          name={name as string}
+          handleRightButtonAction={() => {
+            setVisible(true);
+          }}
+        />
+        <List
+          data={audios}
+          loading={loading}
+          playingUri={
+            typeof playingAudio.uri === "string" ? playingAudio.uri : undefined
+          }
+          handleListItemPress={(item) => {
+            const targetIndex = audios.findIndex((audio) => audio.uri === item.uri);
+            playFromQueue(audios, targetIndex < 0 ? 0 : targetIndex);
+          }}
+          handleListRightAction={(item) => {
+            setOptionAudio(item);
+            setModalName("audioOption");
+          }}
+        />
+        <SelectAudioModal
+          visible={visible}
+          onCancel={() => {
+            setVisible(false);
+          }}
+          onOk={handleAddAudios}
+        />
+      </View>
+    </PageBackground>
   );
 };
 
