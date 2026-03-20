@@ -13,6 +13,10 @@ type UiContextValue = {
   setModalName: Dispatch<SetStateAction<string>>;
   optionAudio: AudioLike;
   setOptionAudio: Dispatch<SetStateAction<AudioLike>>;
+  optionOrigin: "library" | "playlist";
+  setOptionOrigin: Dispatch<SetStateAction<"library" | "playlist">>;
+  optionPlaylistId: string;
+  setOptionPlaylistId: Dispatch<SetStateAction<string>>;
   closeModal: () => void;
 };
 
@@ -21,10 +25,16 @@ const UiContext = createContext<UiContextValue | null>(null);
 export function UiProvider({ children }: { children: ReactNode }) {
   const [modalName, setModalName] = useState("");
   const [optionAudio, setOptionAudio] = useState<AudioLike>({});
+  const [optionOrigin, setOptionOrigin] = useState<"library" | "playlist">(
+    "library",
+  );
+  const [optionPlaylistId, setOptionPlaylistId] = useState("");
 
   const closeModal = () => {
     setModalName("");
     setOptionAudio({});
+    setOptionOrigin("library");
+    setOptionPlaylistId("");
   };
 
   return (
@@ -34,6 +44,10 @@ export function UiProvider({ children }: { children: ReactNode }) {
         setModalName,
         optionAudio,
         setOptionAudio,
+        optionOrigin,
+        setOptionOrigin,
+        optionPlaylistId,
+        setOptionPlaylistId,
         closeModal,
       }}
     >

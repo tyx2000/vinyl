@@ -64,7 +64,7 @@ function RootLayoutNav() {
       primary: mainColor,
       text: textPrimary,
       border: "rgba(255,255,255,0.6)",
-      card: "rgba(255,255,255,0.65)",
+      card: "transparent",
     },
   };
 
@@ -73,8 +73,15 @@ function RootLayoutNav() {
       <SafeAreaProvider>
         <GestureHandlerRootView>
           <GlobalProvider>
-            <Stack screenOptions={{ headerShown: false }}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: "slide_from_right",
+                contentStyle: { backgroundColor: "transparent" },
+              }}
+            >
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="player" />
               <Stack.Screen name="playlist/[playlistId]" />
               <Stack.Screen name="modal" options={{ presentation: "modal" }} />
             </Stack>

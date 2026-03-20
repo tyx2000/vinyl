@@ -7,6 +7,7 @@ import ReAnimated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -133,6 +134,7 @@ export default function AddToPlaylistModal({
   onCreatePlaylist: () => void;
   includedPlaylistIds?: string[];
 }) {
+  const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperBgc = useSharedValue("transparent");
@@ -165,8 +167,21 @@ export default function AddToPlaylistModal({
   }, [visible]);
 
   return (
-    <Modal transparent animationType="none" visible={modalVisible} onRequestClose={onCancel}>
-      <ReAnimated.View style={[styles.wrapper, { backgroundColor: wrapperBgc }]}>
+    <Modal
+      transparent
+      animationType="none"
+      visible={modalVisible}
+      statusBarTranslucent
+      navigationBarTranslucent
+      presentationStyle="overFullScreen"
+      onRequestClose={onCancel}
+    >
+      <ReAnimated.View
+        style={[
+          styles.wrapper,
+          { backgroundColor: wrapperBgc, paddingBottom: insets.bottom + 12 },
+        ]}
+      >
         <Pressable style={styles.backdrop} onPress={onCancel} />
         <ReAnimated.View
           style={[styles.modalContent, { transform: [{ translateY }] }]}

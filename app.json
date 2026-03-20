@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "expovinyl",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -26,11 +25,14 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.READ_MEDIA_AUDIO"
-      ]
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ],
+      "package": "com.tyxu4459.expovinyl"
     },
     "web": {
       "bundler": "metro",
@@ -43,6 +45,7 @@
       [
         "expo-audio",
         {
+          "enableBackgroundPlayback": false,
           "enableBackgroundRecording": false,
           "microphonePermission": false,
           "recordAudioAndroid": false

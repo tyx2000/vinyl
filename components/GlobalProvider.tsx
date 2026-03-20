@@ -1,5 +1,6 @@
 import { LibraryProvider, useLibraryContext } from "@/context/LibraryContext";
 import { PlayerProvider, usePlayerContext } from "@/context/PlayerContext";
+import { PlayerRuntimeProvider } from "@/context/PlayerRuntimeContext";
 import { PlaylistProvider, usePlaylistContext } from "@/context/PlaylistContext";
 import { AudioItem } from "@/context/types";
 import { UiProvider, useUiContext } from "@/context/UiContext";
@@ -22,6 +23,7 @@ function GlobalShell({ children }: { children: ReactNode }) {
   const {
     playingAudio,
     setPlayingAudio,
+    playRequestId,
     currentPlaylist,
     currentIndex,
     playFromQueue,
@@ -36,6 +38,7 @@ function GlobalShell({ children }: { children: ReactNode }) {
   const { removeAudioByUri } = useLibraryContext();
   const {
     createPlaylist,
+    removeAudioFromPlaylist,
     removeAudioFromAllPlaylists,
     playlist,
     playlistLoading,
@@ -43,7 +46,16 @@ function GlobalShell({ children }: { children: ReactNode }) {
     addAudiosToPlaylist,
     checkAudioInPlaylists,
   } = usePlaylistContext();
-  const { modalName, setModalName, optionAudio, setOptionAudio } = useUiContext();
+  const {
+    modalName,
+    setModalName,
+    optionAudio,
+    setOptionAudio,
+    optionOrigin,
+    setOptionOrigin,
+    optionPlaylistId,
+    setOptionPlaylistId,
+  } = useUiContext();
   const [includedPlaylistIds, setIncludedPlaylistIds] = useState<string[]>([]);
   const [toast, setToast] = useState<{
     message: string;
@@ -82,13 +94,21 @@ function GlobalShell({ children }: { children: ReactNode }) {
   const handleAudioOption = async (action: string) => {
     if (action === "delete") {
       if (typeof optionAudio.uri === "string") {
-        await removeAudioByUri(optionAudio.uri);
-        await removeAudioFromAllPlaylists(optionAudio.uri);
-        if (playingAudio.uri === optionAudio.uri) {
-          setPlayingAudio({});
+        if (optionOrigin === "playlist" && optionPlaylistId) {
+          await removeAudioFromPlaylist(optionPlaylistId, optionAudio.uri);
+          showToast("Song removed from playlist", "success");
+        } else {
+          await removeAudioByUri(optionAudio.uri);
+          await removeAudioFromAllPlaylists(optionAudio.uri);
+          if (playingAudio.uri === optionAudio.uri) {
+            setPlayingAudio({});
+          }
+          showToast("Song removed from library", "success");
         }
       }
       setOptionAudio({});
+      setOptionOrigin("library");
+      setOptionPlaylistId("");
       setModalName("");
       return;
     }
@@ -116,6 +136,8 @@ function GlobalShell({ children }: { children: ReactNode }) {
         modalTransitionTimerRef.current = null;
       }
       setOptionAudio({});
+      setOptionOrigin("library");
+      setOptionPlaylistId("");
       setModalName("");
     }
   };
@@ -152,6 +174,8 @@ function GlobalShell({ children }: { children: ReactNode }) {
       showToast("Song is already in this playlist", "warn");
     }
     setOptionAudio({});
+    setOptionOrigin("library");
+    setOptionPlaylistId("");
     setIncludedPlaylistIds([]);
     setModalName("");
   };
@@ -162,15 +186,10 @@ function GlobalShell({ children }: { children: ReactNode }) {
         {children}
         <PlayerFoot
           playingAudio={playingAudio}
-          currentPlaylist={currentPlaylist}
-          currentIndex={currentIndex}
-          playFromQueue={playFromQueue}
-          playMode={playMode}
-          setPlayMode={setPlayMode}
+          playRequestId={playRequestId}
           playNext={playNext}
           playPrevious={playPrevious}
           sleepTimerEndsAt={sleepTimerEndsAt}
-          setSleepTimerMinutes={setSleepTimerMinutes}
           clearSleepTimer={clearSleepTimer}
         />
       </View>
@@ -183,6 +202,7 @@ function GlobalShell({ children }: { children: ReactNode }) {
       />
       <AudioOptionsModal
         visible={modalName === "audioOption"}
+        origin={optionOrigin}
         handleOptionAction={handleAudioOption}
       />
       <AddToPlaylistModal
@@ -192,6 +212,8 @@ function GlobalShell({ children }: { children: ReactNode }) {
         onReload={loadPlaylists}
         onCancel={() => {
           setOptionAudio({});
+          setOptionOrigin("library");
+          setOptionPlaylistId("");
           setIncludedPlaylistIds([]);
           setModalName("");
         }}
@@ -209,13 +231,15 @@ function GlobalShell({ children }: { children: ReactNode }) {
 export default function GlobalProvider({ children }: { children: ReactNode }) {
   return (
     <PlayerProvider>
-      <LibraryProvider>
-        <PlaylistProvider>
-          <UiProvider>
-            <GlobalShell>{children}</GlobalShell>
-          </UiProvider>
-        </PlaylistProvider>
-      </LibraryProvider>
+      <PlayerRuntimeProvider>
+        <LibraryProvider>
+          <PlaylistProvider>
+            <UiProvider>
+              <GlobalShell>{children}</GlobalShell>
+            </UiProvider>
+          </PlaylistProvider>
+        </LibraryProvider>
+      </PlayerRuntimeProvider>
     </PlayerProvider>
   );
 }

@@ -13,6 +13,8 @@ const Home = () => {
     playingAudio,
     playFromQueue,
     setOptionAudio,
+    setOptionOrigin,
+    setOptionPlaylistId,
     setModalName,
   } = useGlobalContext();
 
@@ -36,6 +38,8 @@ const Home = () => {
           }}
           handleListRightAction={(item) => {
             setOptionAudio(item);
+            setOptionOrigin("library");
+            setOptionPlaylistId("");
             setModalName("audioOption");
           }}
         />

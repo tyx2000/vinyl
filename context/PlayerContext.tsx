@@ -12,13 +12,14 @@ import {
 type PlayerContextValue = {
   playingAudio: AudioLike;
   setPlayingAudio: Dispatch<SetStateAction<AudioLike>>;
+  playRequestId: number;
   currentPlaylist: AudioItem[];
   setCurrentPlaylist: Dispatch<SetStateAction<AudioItem[]>>;
   currentIndex: number;
   playMode: PlayMode;
   setPlayMode: Dispatch<SetStateAction<PlayMode>>;
   sleepTimerEndsAt: number | null;
-  setSleepTimerMinutes: (minutes: number | null) => void;
+  setSleepTimerMinutes: (minutes: number | null, fromTs?: number) => void;
   clearSleepTimer: () => void;
   playFromQueue: (playlist: AudioItem[], index: number) => void;
   playNext: () => AudioItem | null;
@@ -29,6 +30,7 @@ const PlayerContext = createContext<PlayerContextValue | null>(null);
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const [playingAudio, setPlayingAudio] = useState<AudioLike>({});
+  const [playRequestId, setPlayRequestId] = useState(0);
   const [currentPlaylist, setCurrentPlaylist] = useState<AudioItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [playMode, setPlayMode] = useState<PlayMode>("loop");
@@ -37,9 +39,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const playFromQueue = (playlist: AudioItem[], index: number) => {
     if (playlist.length === 0) return;
     const nextIndex = Math.max(0, Math.min(index, playlist.length - 1));
+    const nextAudio = playlist[nextIndex];
     setCurrentPlaylist(playlist);
     setCurrentIndex(nextIndex);
-    setPlayingAudio(playlist[nextIndex]);
+    setPlayingAudio({ ...nextAudio });
+    setPlayRequestId((id) => id + 1);
   };
 
   const getRandomIndex = (current: number, total: number) => {
@@ -99,12 +103,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return prevAudio;
   };
 
-  const setSleepTimerMinutes = (minutes: number | null) => {
+  const setSleepTimerMinutes = (minutes: number | null, fromTs?: number) => {
     if (!minutes || minutes <= 0) {
       setSleepTimerEndsAt(null);
       return;
     }
-    setSleepTimerEndsAt(Date.now() + minutes * 60 * 1000);
+    const baseTs = typeof fromTs === "number" ? fromTs : Date.now();
+    setSleepTimerEndsAt(baseTs + minutes * 60 * 1000);
   };
 
   const clearSleepTimer = () => {
@@ -128,6 +133,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       value={{
         playingAudio,
         setPlayingAudio,
+        playRequestId,
         currentPlaylist,
         setCurrentPlaylist,
         currentIndex,

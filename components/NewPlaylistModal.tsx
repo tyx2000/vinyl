@@ -2,31 +2,33 @@ import { divider, mainColor, textPrimary } from "@/constants/Colors";
 import { useEffect, useState } from "react";
 import {
   Modal,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import ReAnimated, {
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
 
 const styles = StyleSheet.create({
-  modalView: {
-    flex: 1,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
-    paddingHorizontal: 20,
-    backgroundColor: "rgba(15,18,30,0.16)",
-  },
-  modalContent: {
-    borderRadius: 16,
-    padding: 20,
     alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(10,12,20,0.26)",
+  },
+  panel: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "#DEE2EB",
     backgroundColor: "#FFFFFF",
+    padding: 16,
   },
   playlistNameInput: {
     width: "100%",
@@ -67,9 +69,6 @@ const styles = StyleSheet.create({
   actionItem: {
     flex: 1,
   },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-  },
   title: {
     width: "100%",
     fontSize: 22,
@@ -89,21 +88,12 @@ const NewPlaylistModal = ({
   onCancel: Function;
   onOk: Function;
 }) => {
-  const translateY = useSharedValue(-250);
   const [name, setName] = useState("");
-  const [modalVisible, setModalVisible] = useState(false);
 
   const handleModalActions = (action: string) => {
     if (action === "Cancel") {
       setName("");
-      translateY.value = withSpring(-250, {}, (done) => {
-        if (done) {
-          console.log("动画完成");
-        }
-      });
-      setTimeout(() => {
-        onCancel();
-      }, 300);
+      onCancel();
     } else {
       onOk(name);
       setName("");
@@ -111,33 +101,26 @@ const NewPlaylistModal = ({
   };
 
   useEffect(() => {
-    if (visible) {
-      setModalVisible(true);
-      translateY.value = withSpring(0);
-    } else {
-      translateY.value = withSpring(-250);
-      setTimeout(() => {
-        setModalVisible(false);
-      }, 300);
+    if (!visible) {
+      setName("");
     }
-    return () => {
-      console.log("effect return");
-    };
   }, [visible]);
 
   return (
     <Modal
       transparent
-      visible={modalVisible}
+      visible={visible}
       animationType="none"
+      statusBarTranslucent
+      navigationBarTranslucent
+      presentationStyle="overFullScreen"
       onRequestClose={() => {
         onCancel();
       }}
     >
-      <View style={styles.modalView}>
-        <ReAnimated.View
-          style={[styles.modalContent, { transform: [{ translateY }] }]}
-        >
+      <View style={styles.overlay}>
+        <Pressable style={styles.backdrop} onPress={() => handleModalActions("Cancel")} />
+        <View style={styles.panel}>
           <Text style={styles.title}>New Playlist</Text>
           <TextInput
             autoFocus
@@ -169,7 +152,7 @@ const NewPlaylistModal = ({
               </TouchableOpacity>
             ))}
           </View>
-        </ReAnimated.View>
+        </View>
       </View>
     </Modal>
   );

@@ -18,6 +18,7 @@ type AddToPlaylistResult = {
 type PlaylistContextValue = {
   playlist: PlaylistItem[];
   playlistLoading: boolean;
+  playlistVersion: number;
   setPlaylist: Dispatch<SetStateAction<PlaylistItem[]>>;
   loadPlaylists: () => Promise<void>;
   createPlaylist: (name: string) => Promise<void>;
@@ -26,6 +27,7 @@ type PlaylistContextValue = {
     playlistId: string,
     audios: AudioItem[],
   ) => Promise<AddToPlaylistResult>;
+  removeAudioFromPlaylist: (playlistId: string, uri: string) => Promise<void>;
   removeAudioFromAllPlaylists: (uri: string) => Promise<void>;
   checkAudioInPlaylists: (uri: string) => Promise<string[]>;
 };
@@ -35,6 +37,7 @@ const PlaylistContext = createContext<PlaylistContextValue | null>(null);
 export function PlaylistProvider({ children }: { children: ReactNode }) {
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [playlistLoading, setPlaylistLoading] = useState(false);
+  const [playlistVersion, setPlaylistVersion] = useState(0);
 
   const readPlaylists = async () => {
     const result = await getLocalValue("vinyl-playlist");
@@ -78,6 +81,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     const nextPlaylists = [...playlist, { id: `p${Date.now()}`, name: nextName }];
     await setLocalValue("vinyl-playlist", JSON.stringify(nextPlaylists));
     setPlaylist(nextPlaylists);
+    setPlaylistVersion((current) => current + 1);
   };
 
   const addAudiosToPlaylist = async (playlistId: string, audios: AudioItem[]) => {
@@ -104,7 +108,18 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     });
 
     await savePlaylistAudios(playlistId, mergedAudios);
+    if (addedCount > 0) {
+      setPlaylistVersion((current) => current + 1);
+    }
     return { audios: mergedAudios, addedCount, skippedCount };
+  };
+
+  const removeAudioFromPlaylist = async (playlistId: string, uri: string) => {
+    const currentAudios = await loadPlaylistAudios(playlistId);
+    const nextAudios = currentAudios.filter((audio) => audio.uri !== uri);
+    if (nextAudios.length === currentAudios.length) return;
+    await savePlaylistAudios(playlistId, nextAudios);
+    setPlaylistVersion((current) => current + 1);
   };
 
   const removeAudioFromAllPlaylists = async (uri: string) => {
@@ -120,6 +135,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
         }
       }),
     );
+    setPlaylistVersion((current) => current + 1);
   };
 
   const checkAudioInPlaylists = async (uri: string) => {
@@ -144,11 +160,13 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
       value={{
         playlist,
         playlistLoading,
+        playlistVersion,
         setPlaylist,
         loadPlaylists,
         createPlaylist,
         loadPlaylistAudios,
         addAudiosToPlaylist,
+        removeAudioFromPlaylist,
         removeAudioFromAllPlaylists,
         checkAudioInPlaylists,
       }}

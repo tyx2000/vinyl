@@ -4,18 +4,22 @@ import PageBackground from "@/components/PageBackground";
 import SelectAudioModal from "@/components/SelectAudioModal";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { AudioItem } from "@/context/types";
-import useMounted from "@/hooks/useMounted";
 import { useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View } from "react-native";
 
 const PlaylistDetails = () => {
   const {
     playFromQueue,
     playingAudio,
+    currentPlaylist,
+    setCurrentPlaylist,
+    playlistVersion,
     loadPlaylistAudios,
     addAudiosToPlaylist,
     setOptionAudio,
+    setOptionOrigin,
+    setOptionPlaylistId,
     setModalName,
   } = useGlobalContext();
   const { name, playlistId } = useLocalSearchParams();
@@ -37,13 +41,27 @@ const PlaylistDetails = () => {
     }
   };
 
-  useMounted(getPlaylistAudios);
+  useEffect(() => {
+    void getPlaylistAudios();
+  }, [playlistId, playlistVersion]);
 
   const handleAddAudios = async (nextAudios: AudioItem[]) => {
     setVisible(false);
     if (typeof playlistId === "string" && nextAudios.length > 0) {
       const merged = await addAudiosToPlaylist(playlistId, nextAudios);
       setAudios(merged.audios);
+
+      const currentPlayingUri =
+        typeof playingAudio.uri === "string" ? playingAudio.uri : "";
+      const mergedUriSet = new Set(merged.audios.map((audio) => audio.uri));
+      const isCurrentQueueFromThisPlaylist =
+        currentPlaylist.length > 0 &&
+        currentPlaylist.every((audio) => mergedUriSet.has(audio.uri)) &&
+        mergedUriSet.has(currentPlayingUri);
+
+      if (isCurrentQueueFromThisPlaylist) {
+        setCurrentPlaylist(merged.audios);
+      }
     }
   };
 
@@ -68,6 +86,8 @@ const PlaylistDetails = () => {
           }}
           handleListRightAction={(item) => {
             setOptionAudio(item);
+            setOptionOrigin("playlist");
+            setOptionPlaylistId(typeof playlistId === "string" ? playlistId : "");
             setModalName("audioOption");
           }}
         />

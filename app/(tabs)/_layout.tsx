@@ -14,12 +14,13 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const resolvedColorScheme = colorScheme === "dark" ? "dark" : "light";
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
-        tabBarInactiveTintColor: Colors[colorScheme ?? "light"].tabIconDefault,
+        tabBarActiveTintColor: Colors[resolvedColorScheme].tint,
+        tabBarInactiveTintColor: Colors[resolvedColorScheme].tabIconDefault,
         // Disable the static render of the header on web
         // to prevent a hydration error in React Navigation v6.
         headerShown: false,
@@ -29,6 +30,7 @@ export default function TabLayout() {
         tabBarItemStyle: styles.tabItem,
         tabBarIconStyle: styles.tabIcon,
         tabBarStyle: styles.tabBar,
+        sceneStyle: styles.scene,
       }}
     >
       <Tabs.Screen
@@ -78,5 +80,8 @@ const styles = StyleSheet.create({
   tabIcon: {
     marginTop: 0,
     marginBottom: 2,
+  },
+  scene: {
+    backgroundColor: "transparent",
   },
 });

@@ -6,6 +6,7 @@ import ReAnimated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -52,24 +53,32 @@ const styles = StyleSheet.create({
   },
 });
 
-const OPTION_ACTIONS = [
-  { id: "delete", label: "Delete from library" },
-  { id: "addTo", label: "Add to playlist" },
-  { id: "close", label: "Close" },
-];
-
 const AudioOptionsModal = ({
   visible,
+  origin,
   handleOptionAction,
 }: {
   visible: boolean;
+  origin: "library" | "playlist";
   handleOptionAction: (action: string) => void;
 }) => {
+  const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const wrapperBgc = useSharedValue("transparent");
   const translateY = useSharedValue(300);
+  const optionActions =
+    origin === "playlist"
+      ? [
+          { id: "delete", label: "Delete from list" },
+          { id: "close", label: "Close" },
+        ]
+      : [
+          { id: "delete", label: "Delete from library" },
+          { id: "addTo", label: "Add to playlist" },
+          { id: "close", label: "Close" },
+        ];
 
   useEffect(() => {
     if (visible) {
@@ -102,18 +111,24 @@ const AudioOptionsModal = ({
       transparent
       animationType="none"
       visible={modalVisible}
+      statusBarTranslucent
+      navigationBarTranslucent
+      presentationStyle="overFullScreen"
       onRequestClose={() => {
         handleOptionAction("close");
       }}
     >
       <ReAnimated.View
-        style={[styles.wrapper, { backgroundColor: wrapperBgc }]}
+        style={[
+          styles.wrapper,
+          { backgroundColor: wrapperBgc, paddingBottom: insets.bottom + 12 },
+        ]}
       >
         <Pressable style={styles.backdrop} onPress={() => handleOptionAction("close")} />
         <ReAnimated.View
           style={[styles.modalContent, { transform: [{ translateY }] }]}
         >
-          {OPTION_ACTIONS.map((action) => (
+          {optionActions.map((action) => (
             <TouchableOpacity
               key={action.id}
               style={[styles.option, action.id === "close" && styles.closeOption]}
