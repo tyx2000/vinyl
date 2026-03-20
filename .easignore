@@ -1,0 +1,25 @@
+# dependencies / caches
+node_modules
+.expo
+.vscode
+.git
+
+# build artifacts
+dist
+web-build
+android/.gradle
+android/build
+android/app/build
+ios/build
+
+# logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# local / system
+.DS_Store
+*.tsbuildinfo
+*.pem
+.env*.local
