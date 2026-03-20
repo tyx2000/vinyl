@@ -22,8 +22,6 @@ import {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import ReAnimated, {
   Easing,
-  FadeIn,
-  FadeOut,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -250,7 +248,6 @@ export default function PlayerFoot({
   const dismissPlaybackBySwipe = () => {
     clearSleepTimer();
     setPlayingAudio({});
-    swipeX.value = 0;
   };
 
   const swipeDismissGesture = Gesture.Pan()
@@ -335,8 +332,6 @@ export default function PlayerFoot({
 
   return (
     <ReAnimated.View
-      entering={FadeIn.duration(180)}
-      exiting={FadeOut.duration(150)}
       style={[styles.wrapper, wrapperStyle]}
     >
       <GestureDetector gesture={swipeDismissGesture}>
