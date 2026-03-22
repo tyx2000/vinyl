@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "expo-vinyl",
+    "name": "Vinyl",
     "slug": "expo-vinyl",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -45,7 +45,7 @@
       [
         "expo-audio",
         {
-          "enableBackgroundPlayback": false,
+          "enableBackgroundPlayback": true,
           "enableBackgroundRecording": false,
           "microphonePermission": false,
           "recordAudioAndroid": false

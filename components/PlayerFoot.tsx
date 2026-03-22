@@ -1,10 +1,14 @@
 import { mainColor, textPrimary, textSecondary } from "@/constants/Colors";
 import { usePlayerContext } from "@/context/PlayerContext";
 import { usePlayerRuntimeContext } from "@/context/PlayerRuntimeContext";
-import { AudioItem, AudioLike } from "@/context/types";
+import { AudioItem, AudioLike, PlayMode } from "@/context/types";
+import { getLocalValue, setLocalValue } from "@/utils/helper";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Asset } from "expo-asset";
+import { File } from "expo-file-system";
 import {
   AudioPlayer,
+  AudioMetadata,
   AudioStatus,
   createAudioPlayer,
   setAudioModeAsync,
@@ -12,7 +16,10 @@ import {
 import { useRouter, useSegments } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AppState,
+  AppStateStatus,
   GestureResponderEvent,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -100,6 +107,20 @@ const formatSeconds = (s: number) => {
   }${Math.floor(seconds)}`;
 };
 
+const lockScreenArtworkAsset = Asset.fromModule(
+  require("../assets/images/icon.png"),
+);
+const PLAYER_STATE_KEY = "vinyl-player-state";
+
+type PersistedPlayerState = {
+  playingAudio?: AudioItem;
+  currentPlaylist: AudioItem[];
+  currentIndex: number;
+  playMode: PlayMode;
+  currentTime: number;
+  wasPlaying: boolean;
+};
+
 export default function PlayerFoot({
   playingAudio,
   playRequestId,
@@ -115,20 +136,34 @@ export default function PlayerFoot({
   sleepTimerEndsAt: number | null;
   clearSleepTimer: () => void;
 }) {
-  const { setPlayingAudio } = usePlayerContext();
+  const {
+    setPlayingAudio,
+    currentPlaylist,
+    currentIndex,
+    playMode,
+    setPlayMode,
+    playFromQueue,
+  } = usePlayerContext();
   const { setRuntimeStatus, setRuntimeActions } = usePlayerRuntimeContext();
 
   const playerRef = useRef<AudioPlayer>(null);
   const statusListenerRef = useRef<{ remove: () => void } | null>(null);
+  const restoreRef = useRef<{
+    uri: string;
+    currentTime: number;
+    wasPlaying: boolean;
+  } | null>(null);
 
   const router = useRouter();
   const segments = useSegments();
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
 
+  const [hydrated, setHydrated] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [lockScreenArtworkUrl, setLockScreenArtworkUrl] = useState<string>();
 
   const title = useMemo(() => String(playingAudio.name ?? "Unknown"), [playingAudio.name]);
   const hasBottomTabBar = segments[0] === "(tabs)";
@@ -155,6 +190,42 @@ export default function PlayerFoot({
     } catch (error) {
       console.log("restart track error", error);
     }
+  };
+
+  const getLockScreenMetadata = (): AudioMetadata => ({
+    title,
+    artist: "Vinyl",
+    albumTitle: "Local Library",
+    artworkUrl: lockScreenArtworkUrl,
+  });
+
+  const savePlayerState = async (next: PersistedPlayerState) => {
+    try {
+      await setLocalValue(PLAYER_STATE_KEY, JSON.stringify(next));
+    } catch (error) {
+      console.log("save player state error", error);
+    }
+  };
+
+  const buildPersistedState = (): PersistedPlayerState => {
+    const activeAudio =
+      typeof playingAudio.uri === "string" && typeof playingAudio.name === "string"
+        ? { uri: playingAudio.uri, name: playingAudio.name }
+        : undefined;
+
+    return {
+      playingAudio: activeAudio,
+      currentPlaylist,
+      currentIndex,
+      playMode,
+      currentTime,
+      wasPlaying: activeAudio ? playing : false,
+    };
+  };
+
+  const flushPlayerState = () => {
+    if (!hydrated) return;
+    void savePlayerState(buildPersistedState());
   };
 
   const togglePlayer = (e?: GestureResponderEvent) => {
@@ -215,19 +286,49 @@ export default function PlayerFoot({
   const initPlayer = async () => {
     if (typeof playingAudio.uri !== "string") return;
     try {
+      if (!lockScreenArtworkAsset.localUri) {
+        await lockScreenArtworkAsset.downloadAsync();
+      }
+      if (lockScreenArtworkAsset.localUri) {
+        setLockScreenArtworkUrl(lockScreenArtworkAsset.localUri);
+      }
+
       await setAudioModeAsync({
         playsInSilentMode: true,
         shouldPlayInBackground: true,
         interruptionMode: "doNotMix",
       });
-      const player = createAudioPlayer(playingAudio.uri, { updateInterval: 250 });
+      const player = createAudioPlayer(playingAudio.uri, {
+        updateInterval: 250,
+        keepAudioSessionActive: true,
+      });
       playerRef.current = player;
       statusListenerRef.current = player.addListener(
         "playbackStatusUpdate",
         playerStatusUpdate,
       );
-      player.play();
-      setPlaying(true);
+      player.setActiveForLockScreen(true, getLockScreenMetadata(), {
+        showSeekBackward: true,
+        showSeekForward: true,
+      });
+
+      const restore = restoreRef.current;
+      if (restore?.uri === playingAudio.uri) {
+        if (restore.currentTime > 0) {
+          await player.seekTo(restore.currentTime);
+          setCurrentTime(restore.currentTime);
+        }
+        if (restore.wasPlaying) {
+          player.play();
+          setPlaying(true);
+        } else {
+          setPlaying(false);
+        }
+        restoreRef.current = null;
+      } else {
+        player.play();
+        setPlaying(true);
+      }
     } catch (error) {
       console.log("init player error", error);
     }
@@ -240,6 +341,7 @@ export default function PlayerFoot({
     if (!playerRef.current) return;
     statusListenerRef.current?.remove();
     statusListenerRef.current = null;
+    playerRef.current.clearLockScreenControls();
     playerRef.current.pause();
     playerRef.current.remove();
     playerRef.current = null;
@@ -273,11 +375,85 @@ export default function PlayerFoot({
     });
 
   useEffect(() => {
+    if (!hydrated) return;
     initPlayer();
     return () => {
       clearPlayer();
     };
-  }, [playingAudio.uri, title, playRequestId]);
+  }, [hydrated, playingAudio.uri, title, playRequestId]);
+
+  useEffect(() => {
+    const hydratePlayer = async () => {
+      try {
+        const raw = await getLocalValue(PLAYER_STATE_KEY);
+        if (!raw) {
+          setHydrated(true);
+          return;
+        }
+
+        const parsed = JSON.parse(raw) as PersistedPlayerState;
+        const playlist = Array.isArray(parsed.currentPlaylist)
+          ? parsed.currentPlaylist.filter(
+              (item): item is AudioItem =>
+                !!item &&
+                typeof item.uri === "string" &&
+                typeof item.name === "string",
+            )
+          : [];
+
+        const restoredAudio =
+          parsed.playingAudio &&
+          typeof parsed.playingAudio.uri === "string" &&
+          typeof parsed.playingAudio.name === "string"
+            ? parsed.playingAudio
+            : undefined;
+
+        const verifiedRestoredAudio =
+          restoredAudio &&
+          (!restoredAudio.uri.startsWith("file:") || new File(restoredAudio.uri).exists)
+            ? restoredAudio
+            : undefined;
+
+        if (parsed.playMode) {
+          setPlayMode(parsed.playMode);
+        }
+
+        const verifiedQueue = playlist.filter(
+          (item) => !item.uri.startsWith("file:") || new File(item.uri).exists,
+        );
+
+        if (verifiedRestoredAudio) {
+          const queue = verifiedQueue.length > 0 ? verifiedQueue : [verifiedRestoredAudio];
+          const fallbackIndex = queue.findIndex(
+            (item) => item.uri === verifiedRestoredAudio.uri,
+          );
+          const index =
+            typeof parsed.currentIndex === "number" &&
+            parsed.currentIndex >= 0 &&
+            parsed.currentIndex < queue.length
+              ? parsed.currentIndex
+              : Math.max(fallbackIndex, 0);
+
+          restoreRef.current = {
+            uri: verifiedRestoredAudio.uri,
+            currentTime:
+              typeof parsed.currentTime === "number" && parsed.currentTime > 0
+                ? parsed.currentTime
+                : 0,
+            wasPlaying: parsed.wasPlaying === true,
+          };
+
+          playFromQueue(queue, index);
+        }
+      } catch (error) {
+        console.log("hydrate player state error", error);
+      } finally {
+        setHydrated(true);
+      }
+    };
+
+    hydratePlayer();
+  }, [playFromQueue, setPlayMode]);
 
   useEffect(() => {
     wrapperBottom.value = withTiming(miniPlayerBottom, {
@@ -306,6 +482,20 @@ export default function PlayerFoot({
   }, [playing, currentTime, duration, setRuntimeStatus]);
 
   useEffect(() => {
+    if (!playerRef.current) return;
+    playerRef.current.updateLockScreenMetadata(getLockScreenMetadata());
+  }, [title, lockScreenArtworkUrl]);
+
+  useEffect(() => {
+    if (!playerRef.current || Platform.OS === "web") return;
+    if (!playingAudio.uri) return;
+    playerRef.current.setActiveForLockScreen(true, getLockScreenMetadata(), {
+      showSeekBackward: true,
+      showSeekForward: true,
+    });
+  }, [playingAudio.uri, title, lockScreenArtworkUrl]);
+
+  useEffect(() => {
     setRuntimeActions({
       togglePlayback: () => togglePlayer(),
       playPreviousTrack: () => {
@@ -321,6 +511,50 @@ export default function PlayerFoot({
   useEffect(() => {
     swipeX.value = 0;
   }, [playingAudio.uri, swipeX]);
+
+  useEffect(() => {
+    flushPlayerState();
+  }, [
+    hydrated,
+    playingAudio.uri,
+    playingAudio.name,
+    currentPlaylist,
+    currentIndex,
+    playMode,
+    currentTime,
+    playing,
+  ]);
+
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === "inactive" || nextAppState === "background") {
+        flushPlayerState();
+      }
+    };
+
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange,
+    );
+    const blurSubscription =
+      Platform.OS === "android"
+        ? AppState.addEventListener("blur", flushPlayerState)
+        : null;
+
+    return () => {
+      appStateSubscription.remove();
+      blurSubscription?.remove();
+    };
+  }, [
+    hydrated,
+    playingAudio.uri,
+    playingAudio.name,
+    currentPlaylist,
+    currentIndex,
+    playMode,
+    currentTime,
+    playing,
+  ]);
 
   if (!playingAudio || typeof playingAudio.uri !== "string") {
     return null;
