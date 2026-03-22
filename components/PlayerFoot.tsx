@@ -148,6 +148,7 @@ export default function PlayerFoot({
 
   const playerRef = useRef<AudioPlayer>(null);
   const statusListenerRef = useRef<{ remove: () => void } | null>(null);
+  const sleepTimerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const restoreRef = useRef<{
     uri: string;
     currentTime: number;
@@ -228,6 +229,18 @@ export default function PlayerFoot({
     void savePlayerState(buildPersistedState());
   };
 
+  const stopPlayback = (clearTimer = false) => {
+    if (playerRef.current) {
+      playerRef.current.pause();
+      playerRef.current.clearLockScreenControls();
+    }
+    setPlaying(false);
+    if (clearTimer) {
+      clearSleepTimer();
+    }
+    flushPlayerState();
+  };
+
   const togglePlayer = (e?: GestureResponderEvent) => {
     e?.stopPropagation();
     if (!playerRef.current) return;
@@ -273,8 +286,7 @@ export default function PlayerFoot({
     if (status.didJustFinish) {
       const nextTrack = playNext();
       if (!nextTrack) {
-        setPlaying(false);
-        clearSleepTimer();
+        stopPlayback(true);
         return;
       }
       if (nextTrack.uri === playingAudio.uri) {
@@ -335,6 +347,10 @@ export default function PlayerFoot({
   };
 
   const clearPlayer = () => {
+    if (sleepTimerTimeoutRef.current) {
+      clearTimeout(sleepTimerTimeoutRef.current);
+      sleepTimerTimeoutRef.current = null;
+    }
     setPlaying(false);
     setCurrentTime(0);
     setDuration(0);
@@ -380,7 +396,7 @@ export default function PlayerFoot({
     return () => {
       clearPlayer();
     };
-  }, [hydrated, playingAudio.uri, title, playRequestId]);
+  }, [hydrated, playingAudio.uri, playRequestId]);
 
   useEffect(() => {
     const hydratePlayer = async () => {
@@ -463,19 +479,30 @@ export default function PlayerFoot({
   }, [miniPlayerBottom]);
 
   useEffect(() => {
+    if (sleepTimerTimeoutRef.current) {
+      clearTimeout(sleepTimerTimeoutRef.current);
+      sleepTimerTimeoutRef.current = null;
+    }
     if (!sleepTimerEndsAt) return;
-    const timer = setInterval(() => {
-      const now = Date.now();
-      if (sleepTimerEndsAt <= now) {
-        if (playerRef.current?.playing) {
-          playerRef.current.pause();
-        }
-        setPlaying(false);
-        clearSleepTimer();
+
+    const remainingMs = sleepTimerEndsAt - Date.now();
+    if (remainingMs <= 0) {
+      stopPlayback(true);
+      return;
+    }
+
+    sleepTimerTimeoutRef.current = setTimeout(() => {
+      sleepTimerTimeoutRef.current = null;
+      stopPlayback(true);
+    }, remainingMs);
+
+    return () => {
+      if (sleepTimerTimeoutRef.current) {
+        clearTimeout(sleepTimerTimeoutRef.current);
+        sleepTimerTimeoutRef.current = null;
       }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [sleepTimerEndsAt, clearSleepTimer]);
+    };
+  }, [sleepTimerEndsAt]);
 
   useEffect(() => {
     setRuntimeStatus({ playing, currentTime, duration });
