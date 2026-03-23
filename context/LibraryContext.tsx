@@ -1,5 +1,11 @@
 import useMounted from "@/hooks/useMounted";
-import { getLocalValue, minResolve, pickAudioFile, setLocalValue } from "@/utils/helper";
+import {
+  getLocalValue,
+  minResolve,
+  normalizeAudioItems,
+  pickAudioFile,
+  setLocalValue,
+} from "@/utils/helper";
 import { File } from "expo-file-system";
 import {
   Dispatch,
@@ -37,7 +43,12 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     try {
       const results = await minResolve(getLocalValue("vinyl-library"));
       if (results) {
-        setAudios(JSON.parse(results) as AudioItem[]);
+        const parsed = JSON.parse(results) as AudioItem[];
+        const normalized = normalizeAudioItems(parsed);
+        setAudios(normalized);
+        if (JSON.stringify(parsed) !== JSON.stringify(normalized)) {
+          await setLocalValue("vinyl-library", JSON.stringify(normalized));
+        }
       }
     } catch (error) {
       console.log("init library audios error", error);
@@ -53,10 +64,11 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       const files = await pickAudioFile();
       if (!files) return;
 
-      const nextAudios: AudioItem[] = [...audios];
-      const uriSet = new Set<string>(audios.map((audio) => audio.uri));
+      const currentAudios = normalizeAudioItems(audios);
+      const nextAudios: AudioItem[] = [...currentAudios];
+      const uriSet = new Set<string>(currentAudios.map((audio) => audio.uri));
       const signatureSet = new Set<string>(
-        audios.map((audio) => getAudioSignature(audio)),
+        currentAudios.map((audio) => getAudioSignature(audio)),
       );
 
       files.forEach((audio) => {

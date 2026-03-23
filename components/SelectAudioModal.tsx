@@ -1,4 +1,9 @@
-import { divider, textPrimary } from "@/constants/Colors";
+import {
+  divider,
+  overlayColor,
+  surfacePrimary,
+  textPrimary,
+} from "@/constants/Colors";
 import { useGlobalContext } from "@/context/GlobalContext";
 import { AudioItem } from "@/context/types";
 import { useEffect, useState } from "react";
@@ -15,7 +20,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(15,18,30,0.16)",
+    backgroundColor: overlayColor,
   },
   modalContent: {
     height: "76%",
@@ -26,8 +31,8 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     gap: 12,
     borderWidth: 1,
-    borderColor: "#DEE2EB",
-    backgroundColor: "#FFFFFF",
+    borderColor: divider,
+    backgroundColor: surfacePrimary,
   },
   actions: {
     width: "100%",
@@ -69,7 +74,7 @@ const SelectAudioModal = ({
     if (visible) {
       setSelectedAudios([]);
       setModalVisible(true);
-      wrapperBgc.value = withTiming("rgba(18, 18, 24, 0.2)");
+      wrapperBgc.value = withTiming("rgba(4, 8, 20, 0.5)");
       translateY.value = withSpring(0);
     } else {
       wrapperBgc.value = withTiming("transparent", {}, (finished) => {

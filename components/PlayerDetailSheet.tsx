@@ -1,21 +1,38 @@
-import { divider, mainColor, textPrimary, textSecondary } from "@/constants/Colors";
-import { AudioItem } from "@/context/types";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import {
+  divider,
+  mainColor,
+  onMainColor,
+  surfacePrimary,
+  surfaceSecondary,
+  textPrimary,
+  textSecondary,
+} from "@/constants/Colors";
+import {
+  NextIcon,
+  NowPlayingIcon,
+  PauseIcon,
+  PlayIcon,
+  PlayModeIcon,
+  PreviousIcon,
+  TimerIcon,
+} from "@/components/icons/PlaybackIcons";
+import { AudioItem, PlayMode } from "@/context/types";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import ReAnimated, { FadeIn, FadeOut } from "react-native-reanimated";
 import SleepTimerPicker from "./SleepTimerPicker";
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     padding: 18,
-    backgroundColor: "#fff",
+    backgroundColor: "transparent",
   },
   queuePanel: {
     flex: 1,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#eee",
-    backgroundColor: "#FFFFFF",
+    borderColor: divider,
+    backgroundColor: surfacePrimary,
     overflow: "hidden",
   },
   queueHeader: {
@@ -40,9 +57,6 @@ const styles = StyleSheet.create({
   queueList: {
     flex: 1,
   },
-  queueListContent: {
-    paddingVertical: 6,
-  },
   queueItem: {
     minHeight: 44,
     paddingHorizontal: 14,
@@ -55,7 +69,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   queueItemActive: {
-    backgroundColor: "rgba(250, 45, 85, 0.08)",
+    backgroundColor: "rgba(240, 246, 252, 0.06)",
   },
   queueItemText: {
     flex: 1,
@@ -64,15 +78,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   queueItemTextActive: {
-    color: mainColor,
+    color: onMainColor,
     fontWeight: "700",
   },
   bottomPanel: {
     marginTop: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#eee",
-    backgroundColor: "#FFFFFF",
+    borderColor: divider,
+    backgroundColor: surfacePrimary,
     paddingHorizontal: 14,
     paddingTop: 14,
     paddingBottom: 16,
@@ -105,14 +119,23 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   bottomActionBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconTransition: {
+    width: 24,
+    height: 24,
     alignItems: "center",
     justifyContent: "center",
   },
   mainActionBtn: {
     backgroundColor: mainColor,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
   },
   progressTouchArea: {
     width: "100%",
@@ -123,7 +146,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 8,
     borderRadius: 999,
-    backgroundColor: "#E1E5EE",
+    backgroundColor: surfaceSecondary,
     overflow: "hidden",
   },
   progressCurrent: {
@@ -138,17 +161,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   infoButton: {
-    minWidth: 96,
-    minHeight: 34,
+    width: 42,
+    height: 42,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: divider,
-    backgroundColor: "#F3F5FA",
+    // borderWidth: 1,
+    // borderColor: divider,
+    // backgroundColor: "#F3F5FA",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingHorizontal: 12,
   },
   infoButtonText: {
     color: textPrimary,
@@ -178,8 +199,7 @@ export default function PlayerDetailSheet({
   currentTimeLabel,
   durationLabel,
   timerText,
-  modeLabel,
-  modeIcon,
+  playMode,
   timerPickerVisible,
   timerInitialMinutes,
   insetsTop,
@@ -205,8 +225,7 @@ export default function PlayerDetailSheet({
   currentTimeLabel: string;
   durationLabel: string;
   timerText: string;
-  modeLabel: string;
-  modeIcon: React.ComponentProps<typeof FontAwesome>["name"];
+  playMode: PlayMode;
   timerPickerVisible: boolean;
   timerInitialMinutes: number | null;
   insetsTop: number;
@@ -232,12 +251,11 @@ export default function PlayerDetailSheet({
     >
       <View style={styles.queuePanel}>
         <View style={styles.queueHeader}>
-          <Text style={styles.queueHeaderTitle}>当前播放列表</Text>
-          <Text style={styles.queueHeaderCount}>{queue.length} 首</Text>
+          <Text style={styles.queueHeaderTitle}>Playlist</Text>
+          <Text style={styles.queueHeaderCount}>{queue.length}</Text>
         </View>
         <ScrollView
           style={styles.queueList}
-          contentContainerStyle={styles.queueListContent}
           showsVerticalScrollIndicator={false}
         >
           {queue.map((item, index) => {
@@ -255,7 +273,7 @@ export default function PlayerDetailSheet({
                 >
                   {item.name}
                 </Text>
-                {active && <FontAwesome name="volume-up" size={14} color={mainColor} />}
+                {active && <NowPlayingIcon size={24} color={onMainColor} animated={playing} />}
               </TouchableOpacity>
             );
           })}
@@ -272,16 +290,27 @@ export default function PlayerDetailSheet({
           </View>
           <View style={styles.bottomActions}>
             <TouchableOpacity style={styles.bottomActionBtn} onPress={onPrevious}>
-              <FontAwesome size={20} color={textPrimary} name="backward" />
+              <PreviousIcon size={24} color={textPrimary} />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.bottomActionBtn, styles.mainActionBtn]}
               onPress={onTogglePlay}
             >
-              <FontAwesome size={18} color="#fff" name={playing ? "pause" : "play"} />
+              <ReAnimated.View
+                key={playing ? "pause" : "play"}
+                entering={FadeIn.duration(140)}
+                exiting={FadeOut.duration(140)}
+                style={styles.iconTransition}
+              >
+                {playing ? (
+                  <PauseIcon size={24} color={onMainColor} />
+                ) : (
+                  <PlayIcon size={24} color={onMainColor} />
+                )}
+              </ReAnimated.View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.bottomActionBtn} onPress={onNext}>
-              <FontAwesome size={20} color={textPrimary} name="forward" />
+              <NextIcon size={24} color={textPrimary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -303,8 +332,11 @@ export default function PlayerDetailSheet({
 
         <View style={styles.infoRow}>
           <TouchableOpacity style={styles.infoButton} onPress={onOpenTimerPicker}>
-            <FontAwesome name="clock-o" size={14} color={textPrimary} />
-            <Text style={styles.infoButtonText}>{timerText}</Text>
+            {timerText === "Off" ? (
+              <TimerIcon size={24} color={textPrimary} />
+            ) : (
+              <Text style={styles.infoButtonText}>{timerText}</Text>
+            )}
           </TouchableOpacity>
 
           <Text style={styles.durationText}>
@@ -312,8 +344,9 @@ export default function PlayerDetailSheet({
           </Text>
 
           <TouchableOpacity style={styles.infoButton} onPress={onCyclePlayMode}>
-            <FontAwesome name={modeIcon} size={14} color={textPrimary} />
-            <Text style={styles.infoButtonText}>{modeLabel}</Text>
+            <ReAnimated.View style={styles.iconTransition}>
+              <PlayModeIcon mode={playMode} size={24} color={textPrimary} />
+            </ReAnimated.View>
           </TouchableOpacity>
         </View>
       </View>

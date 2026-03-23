@@ -1,5 +1,4 @@
 import Colors from "@/constants/Colors";
-import { useColorScheme } from "@/hooks/useColorScheme";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Tabs } from "expo-router";
 import { StyleSheet } from "react-native";
@@ -13,8 +12,7 @@ function TabBarIcon(props: {
 }
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const resolvedColorScheme = colorScheme === "dark" ? "dark" : "light";
+  const resolvedColorScheme = "dark";
 
   return (
     <Tabs
@@ -58,7 +56,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
     marginBottom: 8,
     height: 62,
-    backgroundColor: "transparent",
+    backgroundColor: "rgba(13,17,23,0.94)",
+    borderRadius: 16,
     borderWidth: 0,
     shadowOpacity: 0,
     elevation: 0,

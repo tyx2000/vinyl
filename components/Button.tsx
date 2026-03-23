@@ -1,4 +1,4 @@
-import { mainColor, textSecondary } from "@/constants/Colors";
+import { mainColor, onMainColor, textSecondary } from "@/constants/Colors";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 
 const styles = StyleSheet.create({
@@ -41,7 +41,7 @@ const Button = ({
     onPress={() => onPress()}
     activeOpacity={0.75}
   >
-    <Text style={[styles.text, { color: type === "link" ? textSecondary : "#fff" }]}>
+    <Text style={[styles.text, { color: type === "link" ? textSecondary : onMainColor }]}>
       {text}
     </Text>
   </TouchableOpacity>

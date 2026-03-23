@@ -1,8 +1,11 @@
 import { AudioItem, AudioLike, PlayMode } from "@/context/types";
+import { normalizeAudioItem, normalizeAudioItems } from "@/utils/helper";
 import {
   Dispatch,
   ReactNode,
   SetStateAction,
+  useCallback,
+  useRef,
   createContext,
   useEffect,
   useContext,
@@ -35,23 +38,25 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [playMode, setPlayMode] = useState<PlayMode>("loop");
   const [sleepTimerEndsAt, setSleepTimerEndsAt] = useState<number | null>(null);
+  const prevPlayModeRef = useRef<PlayMode>("loop");
+  const playlistBeforeShuffleRef = useRef<AudioItem[] | null>(null);
 
-  const playFromQueue = (playlist: AudioItem[], index: number) => {
+  const playFromQueue = useCallback((playlist: AudioItem[], index: number) => {
     if (playlist.length === 0) return;
-    const nextIndex = Math.max(0, Math.min(index, playlist.length - 1));
-    const nextAudio = playlist[nextIndex];
-    setCurrentPlaylist(playlist);
+    const normalizedPlaylist = normalizeAudioItems(playlist);
+    const nextIndex = Math.max(0, Math.min(index, normalizedPlaylist.length - 1));
+    const nextAudio = normalizedPlaylist[nextIndex];
+    setCurrentPlaylist(normalizedPlaylist);
     setCurrentIndex(nextIndex);
-    setPlayingAudio({ ...nextAudio });
+    setPlayingAudio({ ...normalizeAudioItem(nextAudio) });
     setPlayRequestId((id) => id + 1);
-  };
+  }, []);
 
-  const getRandomIndex = (current: number, total: number) => {
-    if (total <= 0) return -1;
-    if (total === 1) return 0;
-    let next = current;
-    while (next === current) {
-      next = Math.floor(Math.random() * total);
+  const shuffleAudios = (items: AudioItem[]) => {
+    const next = [...items];
+    for (let i = next.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [next[i], next[j]] = [next[j], next[i]];
     }
     return next;
   };
@@ -61,7 +66,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
     let nextIndex = -1;
     if (playMode === "shuffle") {
-      nextIndex = getRandomIndex(currentIndex, currentPlaylist.length);
+      if (currentIndex < 0) {
+        nextIndex = 0;
+      } else if (currentIndex + 1 < currentPlaylist.length) {
+        nextIndex = currentIndex + 1;
+      }
     } else if (playMode === "single") {
       nextIndex = currentIndex >= 0 ? currentIndex : 0;
     } else {
@@ -75,7 +84,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (nextIndex < 0) return null;
     const nextAudio = currentPlaylist[nextIndex];
     setCurrentIndex(nextIndex);
-    setPlayingAudio(nextAudio);
+    setPlayingAudio(normalizeAudioItem(nextAudio));
     return nextAudio;
   };
 
@@ -84,7 +93,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
     let prevIndex = -1;
     if (playMode === "shuffle") {
-      prevIndex = getRandomIndex(currentIndex, currentPlaylist.length);
+      if (currentIndex < 0) {
+        prevIndex = 0;
+      } else {
+        prevIndex =
+          (currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
+      }
     } else if (playMode === "single") {
       prevIndex = currentIndex >= 0 ? currentIndex : 0;
     } else {
@@ -99,7 +113,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (prevIndex < 0) return null;
     const prevAudio = currentPlaylist[prevIndex];
     setCurrentIndex(prevIndex);
-    setPlayingAudio(prevAudio);
+    setPlayingAudio(normalizeAudioItem(prevAudio));
     return prevAudio;
   };
 
@@ -127,6 +141,52 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setCurrentIndex(nextIndex);
     }
   }, [playingAudio.uri, currentIndex, currentPlaylist]);
+
+  useEffect(() => {
+    const prevMode = prevPlayModeRef.current;
+    if (
+      playMode === "shuffle" &&
+      prevMode !== "shuffle" &&
+      currentPlaylist.length > 1
+    ) {
+      const activeIndexByUri =
+        typeof playingAudio.uri === "string"
+          ? currentPlaylist.findIndex((audio) => audio.uri === playingAudio.uri)
+          : -1;
+      const activeIndex =
+        currentIndex >= 0 && currentIndex < currentPlaylist.length
+          ? currentIndex
+          : activeIndexByUri >= 0
+            ? activeIndexByUri
+            : 0;
+
+      playlistBeforeShuffleRef.current = [...currentPlaylist];
+
+      const activeAudio = currentPlaylist[activeIndex];
+      const rest = currentPlaylist.filter((_, index) => index !== activeIndex);
+      const shuffledRest = shuffleAudios(rest);
+      setCurrentPlaylist([activeAudio, ...shuffledRest]);
+      setCurrentIndex(0);
+    }
+
+    if (playMode !== "shuffle" && prevMode === "shuffle") {
+      const beforeShuffle = playlistBeforeShuffleRef.current;
+      if (beforeShuffle && beforeShuffle.length > 0) {
+        const currentUri =
+          typeof playingAudio.uri === "string"
+            ? playingAudio.uri
+            : currentPlaylist[currentIndex]?.uri;
+        const restoredIndex = currentUri
+          ? beforeShuffle.findIndex((audio) => audio.uri === currentUri)
+          : -1;
+        setCurrentPlaylist(beforeShuffle);
+        setCurrentIndex(restoredIndex >= 0 ? restoredIndex : 0);
+      }
+      playlistBeforeShuffleRef.current = null;
+    }
+
+    prevPlayModeRef.current = playMode;
+  }, [playMode, currentPlaylist, currentIndex, playingAudio.uri]);
 
   return (
     <PlayerContext.Provider

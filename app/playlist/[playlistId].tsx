@@ -3,6 +3,7 @@ import List from "@/components/List";
 import PageBackground from "@/components/PageBackground";
 import SelectAudioModal from "@/components/SelectAudioModal";
 import { useGlobalContext } from "@/context/GlobalContext";
+import { usePlayerRuntimeContext } from "@/context/PlayerRuntimeContext";
 import { AudioItem } from "@/context/types";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -22,6 +23,7 @@ const PlaylistDetails = () => {
     setOptionPlaylistId,
     setModalName,
   } = useGlobalContext();
+  const { playing } = usePlayerRuntimeContext();
   const { name, playlistId } = useLocalSearchParams();
   const [loading, setLoading] = useState(false);
   const [audios, setAudios] = useState<AudioItem[]>([]);
@@ -77,6 +79,7 @@ const PlaylistDetails = () => {
         <List
           data={audios}
           loading={loading}
+          isPlaying={playing}
           playingUri={
             typeof playingAudio.uri === "string" ? playingAudio.uri : undefined
           }

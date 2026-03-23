@@ -1,25 +1,29 @@
-export const mainColor = "#FA2D55";
-export const secondColor = "#6A7CFF";
-export const bgStart = "#FDFDFF";
-export const bgEnd = "#F2F3F8";
-export const glassBorder = "rgba(255, 255, 255, 0.7)";
-export const textPrimary = "#121218";
-export const textSecondary = "#636378";
-export const divider = "rgba(24, 24, 32, 0.08)";
+export const mainColor = "#2B313C";
+export const onMainColor = "#F0F6FC";
+export const secondColor = "#161B22";
+export const bgStart = "#0D1117";
+export const bgEnd = "#0D1117";
+export const surfacePrimary = "#161B22";
+export const surfaceSecondary = "#21262D";
+export const glassBorder = "rgba(240, 246, 252, 0.12)";
+export const textPrimary = "#C9D1D9";
+export const textSecondary = "#8B949E";
+export const divider = "#30363D";
+export const overlayColor = "rgba(1, 4, 9, 0.72)";
 
 export default {
   light: {
     text: textPrimary,
     background: bgEnd,
-    tint: mainColor,
-    tabIconDefault: "#99A0B5",
-    tabIconSelected: mainColor,
+    tint: onMainColor,
+    tabIconDefault: "#8B949E",
+    tabIconSelected: onMainColor,
   },
   dark: {
-    text: "#fff",
-    background: "#000",
-    tint: "#fff",
-    tabIconDefault: "#9aa0aa",
-    tabIconSelected: mainColor,
+    text: textPrimary,
+    background: bgEnd,
+    tint: onMainColor,
+    tabIconDefault: "#8B949E",
+    tabIconSelected: onMainColor,
   },
 };

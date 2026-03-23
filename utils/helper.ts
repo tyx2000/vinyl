@@ -14,6 +14,39 @@ const AUDIO_MIME_TYPES = [
 const AUDIO_EXTENSIONS = ["mp3", "wav", "m4a", "ogg", "flac", "aac"];
 const STORAGE_DIR = new Directory(Paths.document, "vinylData");
 
+const safeDecodeURIComponent = (value: string) => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+
+const getNameFromUri = (uri?: string) => {
+  if (!uri) return "Unknown";
+  const lastSegment = uri.split("/").pop() || "";
+  const raw = lastSegment.split("?")[0] || "";
+  return safeDecodeURIComponent(raw) || "Unknown";
+};
+
+export const normalizeAudioName = (name?: string, uri?: string) => {
+  const candidate = String(name ?? "").trim() || getNameFromUri(uri);
+  const dotIndex = candidate.lastIndexOf(".");
+  if (dotIndex <= 0) return candidate;
+
+  const ext = candidate.slice(dotIndex + 1).toLowerCase();
+  if (!AUDIO_EXTENSIONS.includes(ext)) return candidate;
+  return candidate.slice(0, dotIndex).trim() || candidate;
+};
+
+export const normalizeAudioItem = (audio: AudioItem): AudioItem => ({
+  ...audio,
+  name: normalizeAudioName(audio?.name, audio?.uri),
+});
+
+export const normalizeAudioItems = (audios: AudioItem[]) =>
+  audios.map((audio) => normalizeAudioItem(audio));
+
 const ensureStorageDir = () => {
   if (!STORAGE_DIR.exists) {
     STORAGE_DIR.create({ idempotent: true, intermediates: true });
@@ -93,7 +126,7 @@ export const pickAudioFile = async (): Promise<AudioItem[] | undefined> => {
         throw new Error("copy file failed, file is empty");
       }
       files.push({
-        name: asset.name,
+        name: normalizeAudioName(asset.name, audioFile.uri),
         uri: audioFile.uri,
       });
     }

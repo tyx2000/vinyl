@@ -1,4 +1,9 @@
-import { divider, mainColor } from "@/constants/Colors";
+import {
+  divider,
+  onMainColor,
+  surfaceSecondary,
+  textSecondary,
+} from "@/constants/Colors";
 import { AudioLike } from "@/context/types";
 import { FontAwesome } from "@expo/vector-icons";
 import { FlashList } from "@shopify/flash-list";
@@ -31,7 +36,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 14,
-    backgroundColor: "rgba(250, 45, 85, 0.04)",
+    backgroundColor: surfaceSecondary,
     borderWidth: 1,
     borderColor: divider,
   },
@@ -39,7 +44,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderWidth: 1,
-    borderColor: mainColor,
+    borderColor: textSecondary,
     borderRadius: 999,
     justifyContent: "center",
     alignItems: "center",
@@ -52,6 +57,7 @@ const List = ({
   data,
   selectedData = [],
   playingUri,
+  isPlaying = false,
   handleListRightAction,
   handleListItemPress,
 }: {
@@ -59,6 +65,7 @@ const List = ({
   loading?: boolean;
   selectedData?: AudioLike[];
   playingUri?: string;
+  isPlaying?: boolean;
   data: AudioLike[];
   handleListRightAction: (audio: AudioLike) => void;
   handleListItemPress: (audio: AudioLike) => void;
@@ -73,7 +80,7 @@ const List = ({
             handleListRightAction(item);
           }}
         >
-          <FontAwesome size={16} color={mainColor} name="ellipsis-h" />
+          <FontAwesome size={16} color={onMainColor} name="ellipsis-h" />
         </TouchableOpacity>
       );
     }
@@ -87,7 +94,7 @@ const List = ({
           }}
         >
           <View style={styles.checkbox}>
-            {selected && <FontAwesome size={14} color={mainColor} name="check" />}
+            {selected && <FontAwesome size={14} color={onMainColor} name="check" />}
           </View>
         </TouchableOpacity>
       );
@@ -106,6 +113,7 @@ const List = ({
       onPressItem={handleListItemPress}
       renderRightAction={renderRightAction}
       isActive={typeof item.uri === "string" && item.uri === playingUri}
+      isPlaying={isPlaying}
     />
   );
 
@@ -117,6 +125,7 @@ const List = ({
         <FlashList
           style={styles.flashList}
           data={data}
+          extraData={{ playingUri, isPlaying, selectedCount: selectedData.length, type }}
           renderItem={renderItem}
           keyExtractor={(item, index) =>
             String(item.id ?? item.uri ?? `row-${index}`)

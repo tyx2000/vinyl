@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import List from "@/components/List";
 import PageBackground from "@/components/PageBackground";
 import { useGlobalContext } from "@/context/GlobalContext";
+import { usePlayerRuntimeContext } from "@/context/PlayerRuntimeContext";
 import { useFocusEffect } from "expo-router";
 import { View } from "react-native";
 
@@ -17,10 +18,8 @@ const Home = () => {
     setOptionPlaylistId,
     setModalName,
   } = useGlobalContext();
+  const { playing } = usePlayerRuntimeContext();
 
-  useFocusEffect(() => {
-    console.log("index focus effect");
-  });
 
   return (
     <PageBackground>
@@ -29,6 +28,7 @@ const Home = () => {
         <List
           loading={loading}
           data={audios}
+          isPlaying={playing}
           playingUri={
             typeof playingAudio.uri === "string" ? playingAudio.uri : undefined
           }

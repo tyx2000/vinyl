@@ -1,4 +1,9 @@
-import { mainColor, textPrimary } from "@/constants/Colors";
+import {
+  divider,
+  onMainColor,
+  surfacePrimary,
+  textPrimary,
+} from "@/constants/Colors";
 import { FontAwesome } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 import ReAnimated, { FadeInDown, FadeOutDown } from "react-native-reanimated";
@@ -18,8 +23,8 @@ const styles = StyleSheet.create({
     maxWidth: "86%",
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#DEE2EB",
-    backgroundColor: "#FFFFFF",
+    borderColor: divider,
+    backgroundColor: surfacePrimary,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -42,7 +47,7 @@ export default function ToastBanner({
 }) {
   const iconName =
     type === "success" ? "check-circle" : type === "warn" ? "exclamation-circle" : "info-circle";
-  const iconColor = type === "warn" ? "#FF9F0A" : mainColor;
+  const iconColor = type === "warn" ? "#FF9F0A" : onMainColor;
 
   return (
     <View style={styles.wrapper}>

@@ -4,6 +4,7 @@ import { PlayerRuntimeProvider } from "@/context/PlayerRuntimeContext";
 import { PlaylistProvider, usePlaylistContext } from "@/context/PlaylistContext";
 import { AudioItem } from "@/context/types";
 import { UiProvider, useUiContext } from "@/context/UiContext";
+import { normalizeAudioName } from "@/utils/helper";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import AddToPlaylistModal from "./AddToPlaylistModal";
@@ -162,10 +163,10 @@ function GlobalShell({ children }: { children: ReactNode }) {
 
     const audio: AudioItem = {
       uri: optionAudio.uri,
-      name:
-        typeof optionAudio.name === "string" && optionAudio.name.length > 0
-          ? optionAudio.name
-          : "Unknown",
+      name: normalizeAudioName(
+        typeof optionAudio.name === "string" ? optionAudio.name : "",
+        optionAudio.uri,
+      ),
     };
     const result = await addAudiosToPlaylist(playlistId, [audio]);
     if (result.addedCount > 0) {

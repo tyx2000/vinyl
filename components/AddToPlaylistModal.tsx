@@ -1,4 +1,13 @@
-import { divider, mainColor, textPrimary, textSecondary } from "@/constants/Colors";
+import {
+  divider,
+  mainColor,
+  onMainColor,
+  overlayColor,
+  surfacePrimary,
+  surfaceSecondary,
+  textPrimary,
+  textSecondary,
+} from "@/constants/Colors";
 import { PlaylistItem } from "@/context/types";
 import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -18,16 +27,16 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15,18,30,0.16)",
+    backgroundColor: overlayColor,
   },
   modalContent: {
     borderRadius: 16,
     padding: 20,
     gap: 10,
     borderWidth: 1,
-    borderColor: "#DEE2EB",
+    borderColor: divider,
     minHeight: 280,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: surfacePrimary,
   },
   header: {
     fontSize: 22,
@@ -45,7 +54,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: divider,
-    backgroundColor: "#F3F5FA",
+    backgroundColor: surfaceSecondary,
     justifyContent: "center",
     paddingHorizontal: 14,
   },
@@ -64,10 +73,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: "rgba(250, 45, 85, 0.12)",
+    backgroundColor: mainColor,
   },
   includedText: {
-    color: mainColor,
+    color: onMainColor,
     fontSize: 11,
     fontWeight: "700",
   },
@@ -76,7 +85,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: divider,
-    backgroundColor: "#F3F5FA",
+    backgroundColor: surfaceSecondary,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
@@ -97,7 +106,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: divider,
-    backgroundColor: "#F3F5FA",
+    backgroundColor: surfaceSecondary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -111,7 +120,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   actionPrimaryText: {
-    color: "#fff",
+    color: onMainColor,
   },
 });
 
@@ -148,7 +157,7 @@ export default function AddToPlaylistModal({
       }
       onReload();
       setModalVisible(true);
-      wrapperBgc.value = withTiming("rgba(18, 18, 24, 0.22)");
+      wrapperBgc.value = withTiming("rgba(4, 8, 20, 0.5)");
       translateY.value = withSpring(0);
     } else {
       wrapperBgc.value = withTiming("transparent");

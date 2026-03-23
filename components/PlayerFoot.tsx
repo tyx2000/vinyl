@@ -1,14 +1,18 @@
-import { mainColor, textPrimary, textSecondary } from "@/constants/Colors";
+import {
+  divider,
+  onMainColor,
+  surfaceSecondary,
+  textPrimary,
+  textSecondary,
+} from "@/constants/Colors";
+import { NextIcon, PauseIcon, PlayIcon, PreviousIcon } from "@/components/icons/PlaybackIcons";
 import { usePlayerContext } from "@/context/PlayerContext";
 import { usePlayerRuntimeContext } from "@/context/PlayerRuntimeContext";
 import { AudioItem, AudioLike, PlayMode } from "@/context/types";
-import { getLocalValue, setLocalValue } from "@/utils/helper";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { Asset } from "expo-asset";
+import { getLocalValue, normalizeAudioName, setLocalValue } from "@/utils/helper";
 import { File } from "expo-file-system";
 import {
   AudioPlayer,
-  AudioMetadata,
   AudioStatus,
   createAudioPlayer,
   setAudioModeAsync,
@@ -16,19 +20,21 @@ import {
 import { useRouter, useSegments } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  AppState,
-  AppStateStatus,
-  GestureResponderEvent,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
+    AppState,
+    AppStateStatus,
+    GestureResponderEvent,
+    Platform,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
   useWindowDimensions
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import ReAnimated, {
   Easing,
+  FadeIn,
+  FadeOut,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -53,13 +59,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#DEE2EB",
-    backgroundColor: "#E7ECF5",
+    borderColor: divider,
+    backgroundColor: surfaceSecondary,
     shadowColor: "#0A0E1A",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.22,
     shadowRadius: 10,
-    elevation: 2,
+    elevation: 4,
     paddingHorizontal: 16,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -91,8 +97,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   controlIcon: {
-    width: 30,
-    height: 30,
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconTransition: {
+    width: 24,
+    height: 24,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -107,9 +119,6 @@ const formatSeconds = (s: number) => {
   }${Math.floor(seconds)}`;
 };
 
-const lockScreenArtworkAsset = Asset.fromModule(
-  require("../assets/images/icon.png"),
-);
 const PLAYER_STATE_KEY = "vinyl-player-state";
 
 type PersistedPlayerState = {
@@ -118,7 +127,6 @@ type PersistedPlayerState = {
   currentIndex: number;
   playMode: PlayMode;
   currentTime: number;
-  wasPlaying: boolean;
 };
 
 export default function PlayerFoot({
@@ -152,7 +160,6 @@ export default function PlayerFoot({
   const restoreRef = useRef<{
     uri: string;
     currentTime: number;
-    wasPlaying: boolean;
   } | null>(null);
 
   const router = useRouter();
@@ -164,9 +171,15 @@ export default function PlayerFoot({
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [lockScreenArtworkUrl, setLockScreenArtworkUrl] = useState<string>();
 
-  const title = useMemo(() => String(playingAudio.name ?? "Unknown"), [playingAudio.name]);
+  const title = useMemo(
+    () =>
+      normalizeAudioName(
+        typeof playingAudio.name === "string" ? playingAudio.name : "",
+        typeof playingAudio.uri === "string" ? playingAudio.uri : undefined,
+      ),
+    [playingAudio.name, playingAudio.uri],
+  );
   const hasBottomTabBar = segments[0] === "(tabs)";
   const isPlayerRoute = segments[0] === "player";
   const miniPlayerBottom = insets.bottom + (hasBottomTabBar ? 86 : 12);
@@ -193,13 +206,6 @@ export default function PlayerFoot({
     }
   };
 
-  const getLockScreenMetadata = (): AudioMetadata => ({
-    title,
-    artist: "Vinyl",
-    albumTitle: "Local Library",
-    artworkUrl: lockScreenArtworkUrl,
-  });
-
   const savePlayerState = async (next: PersistedPlayerState) => {
     try {
       await setLocalValue(PLAYER_STATE_KEY, JSON.stringify(next));
@@ -211,16 +217,21 @@ export default function PlayerFoot({
   const buildPersistedState = (): PersistedPlayerState => {
     const activeAudio =
       typeof playingAudio.uri === "string" && typeof playingAudio.name === "string"
-        ? { uri: playingAudio.uri, name: playingAudio.name }
+        ? {
+            uri: playingAudio.uri,
+            name: normalizeAudioName(playingAudio.name, playingAudio.uri),
+          }
         : undefined;
 
     return {
       playingAudio: activeAudio,
-      currentPlaylist,
+      currentPlaylist: currentPlaylist.map((item) => ({
+        ...item,
+        name: normalizeAudioName(item.name, item.uri),
+      })),
       currentIndex,
       playMode,
       currentTime,
-      wasPlaying: activeAudio ? playing : false,
     };
   };
 
@@ -232,7 +243,6 @@ export default function PlayerFoot({
   const stopPlayback = (clearTimer = false) => {
     if (playerRef.current) {
       playerRef.current.pause();
-      playerRef.current.clearLockScreenControls();
     }
     setPlaying(false);
     if (clearTimer) {
@@ -247,6 +257,11 @@ export default function PlayerFoot({
     if (playerRef.current.playing) {
       playerRef.current.pause();
     } else {
+      const isTrackFinished = duration > 0 && currentTime >= duration - 0.2;
+      if (isTrackFinished) {
+        void restartCurrentTrack();
+        return;
+      }
       playerRef.current.play();
     }
   };
@@ -298,13 +313,6 @@ export default function PlayerFoot({
   const initPlayer = async () => {
     if (typeof playingAudio.uri !== "string") return;
     try {
-      if (!lockScreenArtworkAsset.localUri) {
-        await lockScreenArtworkAsset.downloadAsync();
-      }
-      if (lockScreenArtworkAsset.localUri) {
-        setLockScreenArtworkUrl(lockScreenArtworkAsset.localUri);
-      }
-
       await setAudioModeAsync({
         playsInSilentMode: true,
         shouldPlayInBackground: true,
@@ -319,10 +327,6 @@ export default function PlayerFoot({
         "playbackStatusUpdate",
         playerStatusUpdate,
       );
-      player.setActiveForLockScreen(true, getLockScreenMetadata(), {
-        showSeekBackward: true,
-        showSeekForward: true,
-      });
 
       const restore = restoreRef.current;
       if (restore?.uri === playingAudio.uri) {
@@ -330,12 +334,7 @@ export default function PlayerFoot({
           await player.seekTo(restore.currentTime);
           setCurrentTime(restore.currentTime);
         }
-        if (restore.wasPlaying) {
-          player.play();
-          setPlaying(true);
-        } else {
-          setPlaying(false);
-        }
+        setPlaying(false);
         restoreRef.current = null;
       } else {
         player.play();
@@ -357,7 +356,6 @@ export default function PlayerFoot({
     if (!playerRef.current) return;
     statusListenerRef.current?.remove();
     statusListenerRef.current = null;
-    playerRef.current.clearLockScreenControls();
     playerRef.current.pause();
     playerRef.current.remove();
     playerRef.current = null;
@@ -409,19 +407,30 @@ export default function PlayerFoot({
 
         const parsed = JSON.parse(raw) as PersistedPlayerState;
         const playlist = Array.isArray(parsed.currentPlaylist)
-          ? parsed.currentPlaylist.filter(
-              (item): item is AudioItem =>
-                !!item &&
-                typeof item.uri === "string" &&
-                typeof item.name === "string",
-            )
+          ? parsed.currentPlaylist
+              .filter(
+                (item): item is AudioItem =>
+                  !!item &&
+                  typeof item.uri === "string" &&
+                  typeof item.name === "string",
+              )
+              .map((item) => ({
+                ...item,
+                name: normalizeAudioName(item.name, item.uri),
+              }))
           : [];
 
         const restoredAudio =
           parsed.playingAudio &&
           typeof parsed.playingAudio.uri === "string" &&
           typeof parsed.playingAudio.name === "string"
-            ? parsed.playingAudio
+            ? {
+                uri: parsed.playingAudio.uri,
+                name: normalizeAudioName(
+                  parsed.playingAudio.name,
+                  parsed.playingAudio.uri,
+                ),
+              }
             : undefined;
 
         const verifiedRestoredAudio =
@@ -456,7 +465,6 @@ export default function PlayerFoot({
               typeof parsed.currentTime === "number" && parsed.currentTime > 0
                 ? parsed.currentTime
                 : 0,
-            wasPlaying: parsed.wasPlaying === true,
           };
 
           playFromQueue(queue, index);
@@ -469,7 +477,7 @@ export default function PlayerFoot({
     };
 
     hydratePlayer();
-  }, [playFromQueue, setPlayMode]);
+  }, []);
 
   useEffect(() => {
     wrapperBottom.value = withTiming(miniPlayerBottom, {
@@ -507,20 +515,6 @@ export default function PlayerFoot({
   useEffect(() => {
     setRuntimeStatus({ playing, currentTime, duration });
   }, [playing, currentTime, duration, setRuntimeStatus]);
-
-  useEffect(() => {
-    if (!playerRef.current) return;
-    playerRef.current.updateLockScreenMetadata(getLockScreenMetadata());
-  }, [title, lockScreenArtworkUrl]);
-
-  useEffect(() => {
-    if (!playerRef.current || Platform.OS === "web") return;
-    if (!playingAudio.uri) return;
-    playerRef.current.setActiveForLockScreen(true, getLockScreenMetadata(), {
-      showSeekBackward: true,
-      showSeekForward: true,
-    });
-  }, [playingAudio.uri, title, lockScreenArtworkUrl]);
 
   useEffect(() => {
     setRuntimeActions({
@@ -611,13 +605,24 @@ export default function PlayerFoot({
               </View>
               <View style={styles.miniControls}>
                 <Pressable onPress={previousAudio} style={styles.controlIcon}>
-                  <FontAwesome size={22} color={mainColor} name="backward" />
+                  <PreviousIcon size={24} color={onMainColor} />
                 </Pressable>
                 <Pressable onPress={togglePlayer} style={styles.controlIcon}>
-                  <FontAwesome size={22} color={mainColor} name={playing ? "pause" : "play"} />
+                  <ReAnimated.View
+                    key={playing ? "pause" : "play"}
+                    entering={FadeIn.duration(140)}
+                    exiting={FadeOut.duration(140)}
+                    style={styles.iconTransition}
+                  >
+                    {playing ? (
+                      <PauseIcon size={24} color={onMainColor} />
+                    ) : (
+                      <PlayIcon size={24} color={onMainColor} />
+                    )}
+                  </ReAnimated.View>
                 </Pressable>
                 <Pressable onPress={nextAudio} style={styles.controlIcon}>
-                  <FontAwesome size={22} color={mainColor} name="forward" />
+                  <NextIcon size={24} color={onMainColor} />
                 </Pressable>
               </View>
             </View>

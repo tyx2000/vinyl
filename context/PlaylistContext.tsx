@@ -1,4 +1,10 @@
-import { getLocalValue, minResolve, setLocalValue } from "@/utils/helper";
+import {
+  getLocalValue,
+  minResolve,
+  normalizeAudioItem,
+  normalizeAudioItems,
+  setLocalValue,
+} from "@/utils/helper";
 import {
   Dispatch,
   ReactNode,
@@ -53,7 +59,12 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     const result = await getLocalValue(playlistId);
     if (!result) return [];
     try {
-      return JSON.parse(result) as AudioItem[];
+      const parsed = JSON.parse(result) as AudioItem[];
+      const normalized = normalizeAudioItems(parsed);
+      if (JSON.stringify(parsed) !== JSON.stringify(normalized)) {
+        await setLocalValue(playlistId, JSON.stringify(normalized));
+      }
+      return normalized;
     } catch {
       return [];
     }
@@ -94,7 +105,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     currentAudios.forEach((audio) => {
       if (!audio.uri || exists.has(audio.uri)) return;
       exists.add(audio.uri);
-      mergedAudios.push(audio);
+      mergedAudios.push(normalizeAudioItem(audio));
     });
 
     audios.forEach((audio) => {
@@ -103,7 +114,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
         return;
       }
       exists.add(audio.uri);
-      mergedAudios.push(audio);
+      mergedAudios.push(normalizeAudioItem(audio));
       addedCount += 1;
     });
 

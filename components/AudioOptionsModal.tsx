@@ -1,4 +1,12 @@
-import { divider, mainColor, textPrimary } from "@/constants/Colors";
+import {
+  divider,
+  mainColor,
+  onMainColor,
+  overlayColor,
+  surfacePrimary,
+  surfaceSecondary,
+  textPrimary,
+} from "@/constants/Colors";
 import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity } from "react-native";
 import ReAnimated, {
@@ -22,14 +30,14 @@ const styles = StyleSheet.create({
     paddingBottom: 22,
     gap: 8,
     borderWidth: 1,
-    borderColor: "#DEE2EB",
-    backgroundColor: "#FFFFFF",
+    borderColor: divider,
+    backgroundColor: surfacePrimary,
   },
   option: {
     width: "100%",
     minHeight: 48,
     borderRadius: 14,
-    backgroundColor: "#F3F5FA",
+    backgroundColor: surfaceSecondary,
     borderWidth: 1,
     borderColor: divider,
     justifyContent: "center",
@@ -45,11 +53,11 @@ const styles = StyleSheet.create({
     borderColor: mainColor,
   },
   closeLabel: {
-    color: "#fff",
+    color: onMainColor,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15,18,30,0.16)",
+    backgroundColor: overlayColor,
   },
 });
 
@@ -87,7 +95,7 @@ const AudioOptionsModal = ({
         hideTimerRef.current = null;
       }
       setModalVisible(true);
-      wrapperBgc.value = withTiming("rgba(18, 18, 24, 0.22)");
+      wrapperBgc.value = withTiming("rgba(4, 8, 20, 0.5)");
       translateY.value = withSpring(0);
     } else {
       wrapperBgc.value = withTiming("transparent");

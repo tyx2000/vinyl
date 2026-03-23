@@ -1,4 +1,4 @@
-import { mainColor, textSecondary } from "@/constants/Colors";
+import { onMainColor, textSecondary } from "@/constants/Colors";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Text } from "react-native";
 
@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
 export default function Loading({ size }: { size?: "small" | "large" }) {
   return (
     <View style={styles.wrapper}>
-      <ActivityIndicator size={size || "large"} animating color={mainColor} />
+      <ActivityIndicator size={size || "large"} animating color={onMainColor} />
       <Text style={styles.text}>Loading library...</Text>
     </View>
   );

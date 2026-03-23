@@ -1,6 +1,11 @@
-import { mainColor, textPrimary, textSecondary } from "@/constants/Colors";
+import {
+  divider,
+  onMainColor,
+  textPrimary,
+  textSecondary,
+} from "@/constants/Colors";
+import { NowPlayingIcon } from "@/components/icons/PlaybackIcons";
 import { AudioLike } from "@/context/types";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { ReactNode } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import ReAnimated, { FadeInRight, FadeOutLeft } from "react-native-reanimated";
@@ -16,7 +21,7 @@ const styles = StyleSheet.create({
     gap: 12,
     backgroundColor: "transparent",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(24,24,32,0.08)",
+    borderBottomColor: divider,
   },
   audioInfo: {
     flex: 1,
@@ -32,7 +37,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   audioNameActive: {
-    color: mainColor,
+    color: onMainColor,
   },
   dragHandler: {
     width: 18,
@@ -49,7 +54,7 @@ const styles = StyleSheet.create({
     backgroundColor: textSecondary,
   },
   playingIcon: {
-    width: 18,
+    width: 28,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -60,11 +65,13 @@ const ListItem = ({
   renderRightAction,
   onPressItem,
   isActive = false,
+  isPlaying = false,
 }: {
   item: AudioLike;
   onPressItem?: (item: AudioLike) => void;
   renderRightAction: (item: AudioLike) => ReactNode;
   isActive?: boolean;
+  isPlaying?: boolean;
 }) => {
   return (
     <TouchableOpacity
@@ -79,7 +86,7 @@ const ListItem = ({
         <View style={styles.audioInfo}>
           {isActive ? (
             <View style={styles.playingIcon}>
-              <FontAwesome name="volume-up" size={14} color={mainColor} />
+              <NowPlayingIcon size={24} color={onMainColor} animated={isPlaying} />
             </View>
           ) : (
             <View style={styles.dragHandler}>

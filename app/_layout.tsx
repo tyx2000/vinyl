@@ -1,11 +1,7 @@
 import GlobalProvider from "@/components/GlobalProvider";
-import { bgEnd, mainColor, textPrimary } from "@/constants/Colors";
+import { bgEnd, divider, onMainColor, textPrimary } from "@/constants/Colors";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
+import { DarkTheme, ThemeProvider } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -14,8 +10,6 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-
-import { useColorScheme } from "@/hooks/useColorScheme";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -55,21 +49,20 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-  const lightTheme = {
-    ...DefaultTheme,
+  const appTheme = {
+    ...DarkTheme,
     colors: {
-      ...DefaultTheme.colors,
+      ...DarkTheme.colors,
       background: bgEnd,
-      primary: mainColor,
+      primary: onMainColor,
       text: textPrimary,
-      border: "rgba(255,255,255,0.6)",
+      border: divider,
       card: "transparent",
     },
   };
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : lightTheme}>
+    <ThemeProvider value={appTheme}>
       <SafeAreaProvider>
         <GestureHandlerRootView>
           <GlobalProvider>
@@ -87,7 +80,7 @@ function RootLayoutNav() {
             </Stack>
           </GlobalProvider>
         </GestureHandlerRootView>
-        <StatusBar style="dark" translucent />
+        <StatusBar style="light" translucent />
       </SafeAreaProvider>
     </ThemeProvider>
   );

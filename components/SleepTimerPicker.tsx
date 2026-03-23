@@ -1,14 +1,17 @@
-import { divider, mainColor, textPrimary, textSecondary } from "@/constants/Colors";
-import { useEffect, useState } from "react";
-import { Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import ReAnimated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import {
+  divider,
+  mainColor,
+  onMainColor,
+  overlayColor,
+  surfacePrimary,
+  surfaceSecondary,
+  textPrimary,
+} from "@/constants/Colors";
+import useKeyboardHeight from "@/hooks/useKeyboardHeight";
+import { useEffect, useMemo, useState } from "react";
+import { Animated, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-const PRESET_OPTIONS = [15, 30, 60];
+const PRESET_OPTIONS = [15, 30, 45, 60];
 
 const styles = StyleSheet.create({
   overlay: {
@@ -19,15 +22,15 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(10,12,20,0.26)",
+    backgroundColor: overlayColor,
   },
   panel: {
     width: "100%",
     maxWidth: 360,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#DEE2EB",
-    backgroundColor: "#FFFFFF",
+    borderColor: divider,
+    backgroundColor: surfacePrimary,
     padding: 16,
     gap: 10,
   },
@@ -41,7 +44,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: divider,
-    backgroundColor: "#F3F5FA",
+    backgroundColor: surfaceSecondary,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -61,7 +64,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: divider,
-    backgroundColor: "#F3F5FA",
+    backgroundColor: surfaceSecondary,
     paddingHorizontal: 12,
     color: textPrimary,
     fontWeight: "700",
@@ -79,14 +82,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   setBtnText: {
-    color: "#fff",
+    color: onMainColor,
     fontSize: 13,
     fontWeight: "700",
-  },
-  hint: {
-    color: textSecondary,
-    fontSize: 12,
-    fontWeight: "600",
   },
 });
 
@@ -102,44 +100,18 @@ export default function SleepTimerPicker({
   onApply: (minutes: number | null) => void;
 }) {
   const [customMinutes, setCustomMinutes] = useState("");
-  const keyboardOffset = useSharedValue(0);
-
-  const panelStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: -keyboardOffset.value }],
-  }));
+  const keyboardHeight = useKeyboardHeight(visible);
+  const keyboardOffset = Math.max(0, keyboardHeight - 150);
+  const panelStyle = useMemo(
+    () => ({
+      transform: [{ translateY: -keyboardOffset }],
+    }),
+    [keyboardOffset],
+  );
 
   useEffect(() => {
-    if (!visible) {
-      keyboardOffset.value = withTiming(0, {
-        duration: 220,
-        easing: Easing.inOut(Easing.quad),
-      });
-      return;
-    }
+    if (!visible) return;
     setCustomMinutes(initialMinutes ? String(initialMinutes) : "");
-
-    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-
-    const showSub = Keyboard.addListener(showEvent, (event) => {
-      const keyboardHeight = event.endCoordinates?.height ?? 0;
-      const nextOffset = Math.max(0, keyboardHeight - 56);
-      keyboardOffset.value = withTiming(nextOffset, {
-        duration: 240,
-        easing: Easing.inOut(Easing.quad),
-      });
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => {
-      keyboardOffset.value = withTiming(0, {
-        duration: 220,
-        easing: Easing.inOut(Easing.quad),
-      });
-    });
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
   }, [visible, initialMinutes]);
 
   const applyCustom = () => {
@@ -153,10 +125,10 @@ export default function SleepTimerPicker({
   return (
     <View style={styles.overlay}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <ReAnimated.View style={[styles.panel, panelStyle]}>
-        <Text style={styles.title}>定时关闭</Text>
+      <Animated.View style={[styles.panel, panelStyle]}>
+        <Text style={styles.title}>Sleep Timer</Text>
         <TouchableOpacity style={styles.option} onPress={() => onApply(null)}>
-          <Text style={styles.optionText}>关闭定时器</Text>
+          <Text style={styles.optionText}>Turn Off</Text>
         </TouchableOpacity>
         {PRESET_OPTIONS.map((minutes) => (
           <TouchableOpacity
@@ -164,7 +136,7 @@ export default function SleepTimerPicker({
             style={styles.option}
             onPress={() => onApply(minutes)}
           >
-            <Text style={styles.optionText}>{minutes} 分钟后</Text>
+            <Text style={styles.optionText}>{minutes} mins</Text>
           </TouchableOpacity>
         ))}
         <View style={styles.customRow}>
@@ -173,16 +145,15 @@ export default function SleepTimerPicker({
             value={customMinutes}
             onChangeText={setCustomMinutes}
             keyboardType="number-pad"
-            placeholder="自定义分钟"
-            placeholderTextColor="rgba(99,99,120,0.6)"
-            maxLength={4}
+            placeholder="Custom mins"
+            placeholderTextColor="rgba(163,174,200,0.62)"
+            maxLength={2}
           />
           <TouchableOpacity style={styles.setBtn} onPress={applyCustom}>
-            <Text style={styles.setBtnText}>设置</Text>
+            <Text style={styles.setBtnText}>Set</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.hint}>播放列表结束后会自动关闭定时器</Text>
-      </ReAnimated.View>
+      </Animated.View>
     </View>
   );
 }

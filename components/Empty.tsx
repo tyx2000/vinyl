@@ -1,4 +1,4 @@
-import { textSecondary } from "@/constants/Colors";
+import { divider, surfaceSecondary, textSecondary } from "@/constants/Colors";
 import { StyleSheet, Text, View } from "react-native";
 import ReAnimated from "react-native-reanimated";
 
@@ -17,8 +17,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#DEE2EB",
-    backgroundColor: "#F3F5FA",
+    borderColor: divider,
+    backgroundColor: surfaceSecondary,
   },
   message: {
     color: textSecondary,

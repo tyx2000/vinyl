@@ -1,6 +1,16 @@
-import { divider, mainColor, textPrimary } from "@/constants/Colors";
-import { useEffect, useState } from "react";
 import {
+  divider,
+  mainColor,
+  onMainColor,
+  overlayColor,
+  surfacePrimary,
+  surfaceSecondary,
+  textPrimary,
+} from "@/constants/Colors";
+import useKeyboardHeight from "@/hooks/useKeyboardHeight";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Animated,
   Modal,
   Pressable,
   StyleSheet,
@@ -19,15 +29,15 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(10,12,20,0.26)",
+    backgroundColor: overlayColor,
   },
   panel: {
     width: "100%",
     maxWidth: 360,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#DEE2EB",
-    backgroundColor: "#FFFFFF",
+    borderColor: divider,
+    backgroundColor: surfacePrimary,
     padding: 16,
   },
   playlistNameInput: {
@@ -35,7 +45,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: divider,
     borderRadius: 14,
-    backgroundColor: "#F3F5FA",
+    backgroundColor: surfaceSecondary,
     color: textPrimary,
     fontWeight: "700",
     fontSize: 16,
@@ -56,7 +66,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: divider,
-    backgroundColor: "#F3F5FA",
+    backgroundColor: surfaceSecondary,
     overflow: "hidden",
     fontWeight: "700",
     color: textPrimary,
@@ -64,7 +74,7 @@ const styles = StyleSheet.create({
   okButton: {
     backgroundColor: mainColor,
     borderColor: mainColor,
-    color: "#fff",
+    color: onMainColor,
   },
   actionItem: {
     flex: 1,
@@ -89,6 +99,14 @@ const NewPlaylistModal = ({
   onOk: Function;
 }) => {
   const [name, setName] = useState("");
+  const keyboardHeight = useKeyboardHeight(visible);
+  const keyboardOffset = Math.max(0, keyboardHeight - 150);
+  const panelStyle = useMemo(
+    () => ({
+      transform: [{ translateY: -keyboardOffset }],
+    }),
+    [keyboardOffset],
+  );
 
   const handleModalActions = (action: string) => {
     if (action === "Cancel") {
@@ -120,7 +138,7 @@ const NewPlaylistModal = ({
     >
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={() => handleModalActions("Cancel")} />
-        <View style={styles.panel}>
+        <Animated.View style={[styles.panel, panelStyle]}>
           <Text style={styles.title}>New Playlist</Text>
           <TextInput
             autoFocus
@@ -131,7 +149,7 @@ const NewPlaylistModal = ({
               setName(text);
             }}
             placeholder="Name your playlist"
-            placeholderTextColor="rgba(31, 31, 40, 0.4)"
+            placeholderTextColor="rgba(163,174,200,0.6)"
             value={name}
           />
           <View style={styles.modalActions}>
@@ -152,7 +170,7 @@ const NewPlaylistModal = ({
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );

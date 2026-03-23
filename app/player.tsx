@@ -3,6 +3,7 @@ import PageBackground from "@/components/PageBackground";
 import { usePlayerContext } from "@/context/PlayerContext";
 import { usePlayerRuntimeContext } from "@/context/PlayerRuntimeContext";
 import { PlayMode } from "@/context/types";
+import { normalizeAudioName } from "@/utils/helper";
 import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -52,7 +53,14 @@ export default function PlayerScreen() {
   const [draggingTime, setDraggingTime] = useState<number | null>(null);
   const [timerTick, setTimerTick] = useState(() => Date.now());
 
-  const title = useMemo(() => String(playingAudio.name ?? "Unknown"), [playingAudio.name]);
+  const title = useMemo(
+    () =>
+      normalizeAudioName(
+        typeof playingAudio.name === "string" ? playingAudio.name : "",
+        typeof playingAudio.uri === "string" ? playingAudio.uri : undefined,
+      ),
+    [playingAudio.name, playingAudio.uri],
+  );
   const queue = useMemo(() => {
     if (currentPlaylist.length > 0) return currentPlaylist;
     if (typeof playingAudio.uri === "string") {
@@ -79,10 +87,6 @@ export default function PlayerScreen() {
       : null;
   const timerText =
     remainingSleepMs && remainingSleepMs > 0 ? formatCountdown(remainingSleepMs) : "Off";
-  const modeLabel =
-    playMode === "shuffle" ? "随机" : playMode === "loop" ? "顺序" : "单曲";
-  const modeIcon =
-    playMode === "shuffle" ? "random" : playMode === "loop" ? "list-ol" : "dot-circle-o";
 
   const cyclePlayMode = () => {
     const currentIdx = PLAY_MODE_ORDER.findIndex((mode) => mode === playMode);
@@ -166,8 +170,7 @@ export default function PlayerScreen() {
         currentTimeLabel={formatSeconds(displayCurrentTime)}
         durationLabel={formatSeconds(duration)}
         timerText={timerText}
-        modeLabel={modeLabel}
-        modeIcon={modeIcon}
+        playMode={playMode}
         timerPickerVisible={timerPickerVisible}
         timerInitialMinutes={timerMinutes}
         insetsTop={insets.top}
