@@ -8,7 +8,7 @@ import { AudioItem } from "@/context/types";
 import { normalizeAudioName, pickAudioFile } from "@/utils/helper";
 import { File } from "expo-file-system";
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -121,6 +121,17 @@ const PlaylistDetails = () => {
     playModeRef.current = playMode;
   }, [playMode]);
 
+  const sortAudiosByName = (items: AudioItem[]) =>
+    [...items].sort((a, b) =>
+      normalizeAudioName(a.name, a.uri).localeCompare(
+        normalizeAudioName(b.name, b.uri),
+        undefined,
+        { sensitivity: "base", numeric: true },
+      ),
+    );
+
+  const orderedAudios = useMemo(() => sortAudiosByName(audios), [audios]);
+
   const syncQueueAfterPlaylistChanged = (mergedAudios: AudioItem[]) => {
     const mergedUriSet = new Set(mergedAudios.map((audio) => audio.uri));
     const currentPlayingUri = playingUriRef.current;
@@ -136,7 +147,7 @@ const PlaylistDetails = () => {
       }
 
       if (playModeRef.current !== "shuffle") {
-        return mergedAudios;
+        return sortAudiosByName(mergedAudios);
       }
 
       const preservedOrder = queue.filter((audio) => mergedUriSet.has(audio.uri));
@@ -282,7 +293,7 @@ const PlaylistDetails = () => {
           }}
         />
         <List
-          data={audios}
+          data={orderedAudios}
           loading={loading}
           swipeActionsEnabled={!importing}
           playingUri={
@@ -290,13 +301,15 @@ const PlaylistDetails = () => {
           }
           handleListItemPress={(item) => {
             if (importing) return;
-            const targetIndex = audios.findIndex((audio) => audio.uri === item.uri);
+            const targetIndex = orderedAudios.findIndex(
+              (audio) => audio.uri === item.uri,
+            );
             const currentPlayingUri =
               typeof playingAudio.uri === "string" ? playingAudio.uri : "";
             const isSameAudio = item.uri === currentPlayingUri;
-            const playlistUriSet = new Set(audios.map((audio) => audio.uri));
+            const playlistUriSet = new Set(orderedAudios.map((audio) => audio.uri));
             const isSamePlaylistQueue =
-              currentPlaylist.length === audios.length &&
+              currentPlaylist.length === orderedAudios.length &&
               currentPlaylist.every((audio) => playlistUriSet.has(audio.uri));
             const trackFinishedWhilePaused =
               !playing && duration > 0 && currentTime >= duration - 0.2;
@@ -304,7 +317,7 @@ const PlaylistDetails = () => {
             if (isSameAudio && isSamePlaylistQueue && !trackFinishedWhilePaused) {
               return;
             }
-            playFromQueue(audios, targetIndex < 0 ? 0 : targetIndex);
+            playFromQueue(orderedAudios, targetIndex < 0 ? 0 : targetIndex);
           }}
           handleListRightAction={(item) => {
             if (importing) return;
@@ -348,7 +361,7 @@ const PlaylistDetails = () => {
                     latestSourceUriSet.has(audio.uri),
                   );
                 }
-                return nextAudios;
+                return sortAudiosByName(nextAudios);
               });
             })();
           }}

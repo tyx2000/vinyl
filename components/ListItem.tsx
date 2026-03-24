@@ -1,8 +1,6 @@
 import {
-  divider,
-  mainColor,
   onMainColor,
-  textPrimary,
+  textPrimary
 } from "@/constants/Colors";
 import { AudioLike } from "@/context/types";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -28,12 +26,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 12,
     backgroundColor: "transparent",
-    borderBottomWidth: 1,
-    borderBottomColor: divider,
   },
   itemActive: {
     backgroundColor: "rgba(240, 246, 252, 0.06)",
-    borderRadius: 10,
+    borderRadius: 999,
   },
   audioInfo: {
     flex: 1,
@@ -57,8 +53,8 @@ const styles = StyleSheet.create({
   swipeRightAction: {
     width: "100%",
     height: '90%',
-    borderRadius: 12,
-    backgroundColor: mainColor,
+    borderRadius: 999,
+    backgroundColor: 'rgba(240, 246, 252, 0.06)',
     alignItems: "center",
     justifyContent: "center",
   },
