@@ -61,6 +61,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return next;
   };
 
+  const mergeShuffleSnapshotWithCurrent = (
+    snapshot: AudioItem[],
+    current: AudioItem[],
+  ) => {
+    const currentSet = new Set(current.map((item) => item.uri));
+    const kept = snapshot.filter((item) => currentSet.has(item.uri));
+    const keptSet = new Set(kept.map((item) => item.uri));
+    const appended = current.filter((item) => !keptSet.has(item.uri));
+    return [...kept, ...appended];
+  };
+
   const playNext = () => {
     if (currentPlaylist.length === 0) return null;
 
@@ -172,17 +183,31 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (playMode !== "shuffle" && prevMode === "shuffle") {
       const beforeShuffle = playlistBeforeShuffleRef.current;
       if (beforeShuffle && beforeShuffle.length > 0) {
+        const mergedSnapshot = mergeShuffleSnapshotWithCurrent(
+          beforeShuffle,
+          currentPlaylist,
+        );
         const currentUri =
           typeof playingAudio.uri === "string"
             ? playingAudio.uri
             : currentPlaylist[currentIndex]?.uri;
         const restoredIndex = currentUri
-          ? beforeShuffle.findIndex((audio) => audio.uri === currentUri)
+          ? mergedSnapshot.findIndex((audio) => audio.uri === currentUri)
           : -1;
-        setCurrentPlaylist(beforeShuffle);
+        setCurrentPlaylist(mergedSnapshot);
         setCurrentIndex(restoredIndex >= 0 ? restoredIndex : 0);
       }
       playlistBeforeShuffleRef.current = null;
+    }
+
+    if (playMode === "shuffle" && prevMode === "shuffle") {
+      const beforeShuffle = playlistBeforeShuffleRef.current;
+      if (beforeShuffle && beforeShuffle.length > 0) {
+        playlistBeforeShuffleRef.current = mergeShuffleSnapshotWithCurrent(
+          beforeShuffle,
+          currentPlaylist,
+        );
+      }
     }
 
     prevPlayModeRef.current = playMode;

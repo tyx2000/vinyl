@@ -189,7 +189,6 @@ const styles = StyleSheet.create({
 
 export default function PlayerDetailSheet({
   title,
-  subtitle,
   queue,
   activeQueueIndex,
   playing,
@@ -215,7 +214,6 @@ export default function PlayerDetailSheet({
   onCyclePlayMode,
 }: {
   title: string;
-  subtitle: string;
   queue: AudioItem[];
   activeQueueIndex: number;
   playing: boolean;

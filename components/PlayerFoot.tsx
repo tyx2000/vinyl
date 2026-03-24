@@ -18,7 +18,7 @@ import {
   setAudioModeAsync,
 } from "expo-audio";
 import { useRouter, useSegments } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     AppState,
     AppStateStatus,
@@ -161,6 +161,13 @@ export default function PlayerFoot({
     uri: string;
     currentTime: number;
   } | null>(null);
+  const persistStateRef = useRef<PersistedPlayerState | null>(null);
+  const runtimeActionRef = useRef({
+    togglePlayback: () => {},
+    playPreviousTrack: () => {},
+    playNextTrack: () => {},
+    seekTo: (_seconds: number) => {},
+  });
 
   const router = useRouter();
   const segments = useSegments();
@@ -205,13 +212,13 @@ export default function PlayerFoot({
     }
   };
 
-  const savePlayerState = async (next: PersistedPlayerState) => {
+  const savePlayerState = useCallback(async (next: PersistedPlayerState) => {
     try {
       await setLocalValue(PLAYER_STATE_KEY, JSON.stringify(next));
     } catch (error) {
       console.log("save player state error", error);
     }
-  };
+  }, []);
 
   const buildPersistedState = (): PersistedPlayerState => {
     const activeAudio =
@@ -234,10 +241,10 @@ export default function PlayerFoot({
     };
   };
 
-  const flushPlayerState = () => {
-    if (!hydrated) return;
-    void savePlayerState(buildPersistedState());
-  };
+  const flushPlayerState = useCallback(() => {
+    if (!hydrated || !persistStateRef.current) return;
+    void savePlayerState(persistStateRef.current);
+  }, [hydrated, savePlayerState]);
 
   const stopPlayback = (clearTimer = false) => {
     if (playerRef.current) {
@@ -291,6 +298,19 @@ export default function PlayerFoot({
       .catch((error) => {
         console.log("seek error", error);
       });
+  };
+
+  runtimeActionRef.current.togglePlayback = () => {
+    togglePlayer();
+  };
+  runtimeActionRef.current.playPreviousTrack = () => {
+    void previousAudio();
+  };
+  runtimeActionRef.current.playNextTrack = () => {
+    void nextAudio();
+  };
+  runtimeActionRef.current.seekTo = (seconds: number) => {
+    seekToSeconds(seconds);
   };
 
   const playerStatusUpdate = async (status: AudioStatus) => {
@@ -517,20 +537,27 @@ export default function PlayerFoot({
 
   useEffect(() => {
     setRuntimeActions({
-      togglePlayback: () => togglePlayer(),
-      playPreviousTrack: () => {
-        void previousAudio();
-      },
-      playNextTrack: () => {
-        void nextAudio();
-      },
-      seekTo: seekToSeconds,
+      togglePlayback: () => runtimeActionRef.current.togglePlayback(),
+      playPreviousTrack: () => runtimeActionRef.current.playPreviousTrack(),
+      playNextTrack: () => runtimeActionRef.current.playNextTrack(),
+      seekTo: (seconds: number) => runtimeActionRef.current.seekTo(seconds),
     });
-  }, [setRuntimeActions, playingAudio.uri, playNext, playPrevious]);
+  }, [setRuntimeActions]);
 
   useEffect(() => {
     swipeX.value = 0;
   }, [playingAudio.uri, swipeX]);
+
+  useEffect(() => {
+    persistStateRef.current = buildPersistedState();
+  }, [
+    playingAudio.uri,
+    playingAudio.name,
+    currentPlaylist,
+    currentIndex,
+    playMode,
+    currentTime,
+  ]);
 
   useEffect(() => {
     flushPlayerState();
@@ -541,9 +568,19 @@ export default function PlayerFoot({
     currentPlaylist,
     currentIndex,
     playMode,
-    currentTime,
     playing,
+    flushPlayerState,
   ]);
+
+  useEffect(() => {
+    if (!hydrated || !playing || typeof playingAudio.uri !== "string") {
+      return;
+    }
+    const timer = setInterval(() => {
+      flushPlayerState();
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [hydrated, playing, playingAudio.uri, flushPlayerState]);
 
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
@@ -565,16 +602,7 @@ export default function PlayerFoot({
       appStateSubscription.remove();
       blurSubscription?.remove();
     };
-  }, [
-    hydrated,
-    playingAudio.uri,
-    playingAudio.name,
-    currentPlaylist,
-    currentIndex,
-    playMode,
-    currentTime,
-    playing,
-  ]);
+  }, [flushPlayerState]);
 
   if (!playingAudio || typeof playingAudio.uri !== "string") {
     return null;

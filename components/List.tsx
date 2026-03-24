@@ -30,17 +30,20 @@ const List = ({
   loading,
   data,
   playingUri,
+  swipeActionsEnabled = true,
   handleListRightAction,
   handleListItemPress,
 }: {
   type?: string;
   loading?: boolean;
   playingUri?: string;
+  swipeActionsEnabled?: boolean;
   data: AudioLike[];
   handleListRightAction: (audio: AudioLike) => void;
   handleListItemPress: (audio: AudioLike) => void;
 }) => {
-  const enableSwipeAction = type === "audioList" || type === "playlist";
+  const enableSwipeAction =
+    swipeActionsEnabled && (type === "audioList" || type === "playlist");
 
   const renderItem = ({
     item,

@@ -20,6 +20,7 @@ const Home = () => {
     clearSleepTimer,
     removePlaylist,
     setModalName,
+    showToast,
   } =
     useGlobalContext();
 
@@ -63,6 +64,7 @@ const Home = () => {
                 setPlayingAudio({});
                 setCurrentPlaylist([]);
                 clearSleepTimer();
+                showToast("Playback stopped (source playlist was deleted)", "warn");
               }
             })();
           }}

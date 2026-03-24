@@ -6,6 +6,7 @@ import { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import NewPlaylistModal from "./NewPlaylistModal";
 import PlayerFoot from "./PlayerFoot";
+import ToastBanner from "./ToastBanner";
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -24,7 +25,7 @@ function GlobalShell({ children }: { children: ReactNode }) {
     clearSleepTimer,
   } = usePlayerContext();
   const { createPlaylist, loadPlaylists } = usePlaylistContext();
-  const { modalName, setModalName } = useUiContext();
+  const { modalName, setModalName, toast } = useUiContext();
 
   const handleCreatePlaylist = async (name: string) => {
     await createPlaylist(name);
@@ -52,6 +53,7 @@ function GlobalShell({ children }: { children: ReactNode }) {
         }}
         onOk={handleCreatePlaylist}
       />
+      {toast ? <ToastBanner key={toast.id} message={toast.message} type={toast.type} /> : null}
     </>
   );
 }

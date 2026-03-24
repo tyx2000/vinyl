@@ -6,9 +6,13 @@ import Button from "./Button";
 export default function Header({
   name,
   handleRightButtonAction,
+  rightButtonText = "Add",
+  rightButtonDisabled = false,
 }: {
   name: string;
   handleRightButtonAction: () => void;
+  rightButtonText?: string;
+  rightButtonDisabled?: boolean;
 }) {
   const insets = useSafeAreaInsets();
 
@@ -35,7 +39,11 @@ export default function Header({
     <View style={[styles.wrapper, { paddingTop: insets.top }]}>
       <View style={styles.content}>
         <Text style={styles.title}>{name}</Text>
-        <Button text="Add" onPress={handleRightButtonAction} />
+        <Button
+          text={rightButtonText}
+          onPress={handleRightButtonAction}
+          disabled={rightButtonDisabled}
+        />
       </View>
     </View>
   );

@@ -96,6 +96,12 @@ export default function PlayerScreen() {
 
   const selectQueueItem = (index: number) => {
     if (index < 0 || index >= queue.length) return;
+    const isActive = index === activeQueueIndex;
+    const trackFinishedWhilePaused =
+      !playing && duration > 0 && currentTime >= duration - 0.2;
+    if (isActive && !trackFinishedWhilePaused) {
+      return;
+    }
     playFromQueue(queue, index);
   };
 
@@ -158,11 +164,6 @@ export default function PlayerScreen() {
     <PageBackground>
       <PlayerDetailSheet
         title={title}
-        subtitle={
-          queueLength > 0 && currentIndex >= 0
-            ? `${currentIndex + 1} / ${queueLength}`
-            : "Now Playing"
-        }
         queue={queue}
         activeQueueIndex={activeQueueIndex}
         playing={playing}

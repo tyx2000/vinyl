@@ -25,21 +25,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
   },
+  disabled: {
+    opacity: 0.5,
+  },
 });
 
 const Button = ({
   type,
   text,
   onPress,
+  disabled = false,
 }: {
   type?: "link" | "solid";
   text: string;
-  onPress: Function;
+  onPress: () => void;
+  disabled?: boolean;
 }) => (
   <TouchableOpacity
-    style={[styles.button, type === "link" ? styles.link : styles.solid]}
-    onPress={() => onPress()}
-    activeOpacity={0.75}
+    style={[
+      styles.button,
+      type === "link" ? styles.link : styles.solid,
+      disabled && styles.disabled,
+    ]}
+    onPress={onPress}
+    disabled={disabled}
+    activeOpacity={disabled ? 1 : 0.75}
   >
     <Text style={[styles.text, { color: type === "link" ? textSecondary : onMainColor }]}>
       {text}
