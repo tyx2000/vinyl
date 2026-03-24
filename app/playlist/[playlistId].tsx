@@ -1,10 +1,10 @@
 import Header from "@/components/Header";
 import List from "@/components/List";
 import PageBackground from "@/components/PageBackground";
-import SelectAudioModal from "@/components/SelectAudioModal";
 import { useGlobalContext } from "@/context/GlobalContext";
-import { usePlayerRuntimeContext } from "@/context/PlayerRuntimeContext";
 import { AudioItem } from "@/context/types";
+import { normalizeAudioName, pickAudioFile } from "@/utils/helper";
+import { File } from "expo-file-system";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
@@ -13,21 +13,19 @@ const PlaylistDetails = () => {
   const {
     playFromQueue,
     playingAudio,
+    setPlayingAudio,
     currentPlaylist,
     setCurrentPlaylist,
+    clearSleepTimer,
     playlistVersion,
     loadPlaylistAudios,
     addAudiosToPlaylist,
-    setOptionAudio,
-    setOptionOrigin,
-    setOptionPlaylistId,
-    setModalName,
+    removeAudioFromPlaylist,
   } = useGlobalContext();
-  const { playing } = usePlayerRuntimeContext();
   const { name, playlistId } = useLocalSearchParams();
   const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [audios, setAudios] = useState<AudioItem[]>([]);
-  const [visible, setVisible] = useState(false);
 
   const getPlaylistAudios = async () => {
     setLoading(true);
@@ -47,23 +45,70 @@ const PlaylistDetails = () => {
     void getPlaylistAudios();
   }, [playlistId, playlistVersion]);
 
-  const handleAddAudios = async (nextAudios: AudioItem[]) => {
-    setVisible(false);
-    if (typeof playlistId === "string" && nextAudios.length > 0) {
-      const merged = await addAudiosToPlaylist(playlistId, nextAudios);
+  const syncQueueAfterPlaylistChanged = (mergedAudios: AudioItem[]) => {
+    const currentPlayingUri =
+      typeof playingAudio.uri === "string" ? playingAudio.uri : "";
+    const mergedUriSet = new Set(mergedAudios.map((audio) => audio.uri));
+    const isCurrentQueueFromThisPlaylist =
+      currentPlaylist.length > 0 &&
+      currentPlaylist.every((audio) => mergedUriSet.has(audio.uri)) &&
+      mergedUriSet.has(currentPlayingUri);
+
+    if (isCurrentQueueFromThisPlaylist) {
+      setCurrentPlaylist(mergedAudios);
+    }
+  };
+
+  const getAudioSignature = (audio: AudioItem) => {
+    const file = new File(audio.uri);
+    const size = file.exists && typeof file.size === "number" ? file.size : -1;
+    const normalizedName = normalizeAudioName(audio.name, audio.uri)
+      .trim()
+      .toLowerCase();
+    return `${normalizedName}::${size}`;
+  };
+
+  const handleImportAudios = async () => {
+    if (typeof playlistId !== "string") return;
+    setImporting(true);
+    try {
+      const pickedAudios = await pickAudioFile();
+      if (!pickedAudios || pickedAudios.length === 0) return;
+
+      const dedupedAudios: AudioItem[] = [];
+      const uriSet = new Set<string>(audios.map((audio) => audio.uri));
+      const signatureSet = new Set<string>(audios.map(getAudioSignature));
+
+      pickedAudios.forEach((rawAudio) => {
+        const audio: AudioItem = {
+          ...rawAudio,
+          name: normalizeAudioName(rawAudio.name, rawAudio.uri),
+        };
+        const signature = getAudioSignature(audio);
+        const duplicated = uriSet.has(audio.uri) || signatureSet.has(signature);
+
+        if (duplicated) {
+          const copiedFile = new File(audio.uri);
+          if (copiedFile.exists) {
+            copiedFile.delete();
+          }
+          return;
+        }
+
+        uriSet.add(audio.uri);
+        signatureSet.add(signature);
+        dedupedAudios.push(audio);
+      });
+
+      if (dedupedAudios.length === 0) return;
+
+      const merged = await addAudiosToPlaylist(playlistId, dedupedAudios);
       setAudios(merged.audios);
-
-      const currentPlayingUri =
-        typeof playingAudio.uri === "string" ? playingAudio.uri : "";
-      const mergedUriSet = new Set(merged.audios.map((audio) => audio.uri));
-      const isCurrentQueueFromThisPlaylist =
-        currentPlaylist.length > 0 &&
-        currentPlaylist.every((audio) => mergedUriSet.has(audio.uri)) &&
-        mergedUriSet.has(currentPlayingUri);
-
-      if (isCurrentQueueFromThisPlaylist) {
-        setCurrentPlaylist(merged.audios);
-      }
+      syncQueueAfterPlaylistChanged(merged.audios);
+    } catch (error) {
+      console.log("import audios error", error);
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -73,13 +118,12 @@ const PlaylistDetails = () => {
         <Header
           name={name as string}
           handleRightButtonAction={() => {
-            setVisible(true);
+            void handleImportAudios();
           }}
         />
         <List
           data={audios}
-          loading={loading}
-          isPlaying={playing}
+          loading={loading || importing}
           playingUri={
             typeof playingAudio.uri === "string" ? playingAudio.uri : undefined
           }
@@ -88,18 +132,36 @@ const PlaylistDetails = () => {
             playFromQueue(audios, targetIndex < 0 ? 0 : targetIndex);
           }}
           handleListRightAction={(item) => {
-            setOptionAudio(item);
-            setOptionOrigin("playlist");
-            setOptionPlaylistId(typeof playlistId === "string" ? playlistId : "");
-            setModalName("audioOption");
+            if (typeof playlistId !== "string" || typeof item.uri !== "string") {
+              return;
+            }
+            const targetUri = item.uri;
+
+            void (async () => {
+              await removeAudioFromPlaylist(playlistId, targetUri);
+              const nextAudios = audios.filter((audio) => audio.uri !== targetUri);
+              setAudios(nextAudios);
+
+              const isDeletingCurrentPlayingAudio =
+                typeof playingAudio.uri === "string" &&
+                playingAudio.uri === targetUri;
+              if (isDeletingCurrentPlayingAudio) {
+                setPlayingAudio({});
+                setCurrentPlaylist([]);
+                clearSleepTimer();
+                return;
+              }
+
+              const sourceUriSet = new Set(audios.map((audio) => audio.uri));
+              const isCurrentQueueFromThisPlaylist =
+                currentPlaylist.length > 0 &&
+                currentPlaylist.every((audio) => sourceUriSet.has(audio.uri));
+
+              if (isCurrentQueueFromThisPlaylist) {
+                setCurrentPlaylist(nextAudios);
+              }
+            })();
           }}
-        />
-        <SelectAudioModal
-          visible={visible}
-          onCancel={() => {
-            setVisible(false);
-          }}
-          onOk={handleAddAudios}
         />
       </View>
     </PageBackground>

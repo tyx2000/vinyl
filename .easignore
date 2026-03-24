@@ -7,6 +7,8 @@ node_modules
 # build artifacts
 dist
 web-build
+android
+ios
 android/.gradle
 android/build
 android/app/build

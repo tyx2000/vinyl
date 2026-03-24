@@ -1,86 +1,15 @@
-import Colors from "@/constants/Colors";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Tabs } from "expo-router";
-import { StyleSheet } from "react-native";
-
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
-function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>["name"];
-  color: string;
-}) {
-  return <FontAwesome size={21} {...props} />;
-}
 
 export default function TabLayout() {
-  const resolvedColorScheme = "dark";
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[resolvedColorScheme].tint,
-        tabBarInactiveTintColor: Colors[resolvedColorScheme].tabIconDefault,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
         headerShown: false,
-        tabBarShowLabel: true,
-        tabBarLabelPosition: "below-icon",
-        tabBarLabelStyle: styles.tabLabel,
-        tabBarItemStyle: styles.tabItem,
-        tabBarIconStyle: styles.tabIcon,
-        tabBarStyle: styles.tabBar,
-        sceneStyle: styles.scene,
+        tabBarStyle: { display: "none" },
+        sceneStyle: { backgroundColor: "transparent" },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Library",
-          tabBarIcon: ({ color }) => <TabBarIcon name="music" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="playlist"
-        options={{
-          title: "Playlists",
-          tabBarIcon: ({ color }) => <TabBarIcon name="star" color={color} />,
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: "Playlist" }} />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    position: "absolute",
-    borderTopWidth: 0,
-    marginHorizontal: 8,
-    marginBottom: 8,
-    height: 62,
-    backgroundColor: "rgba(13,17,23,0.94)",
-    borderRadius: 16,
-    borderWidth: 0,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  tabLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    lineHeight: 16,
-    textAlign: "center",
-    marginTop: 0,
-    marginBottom: 0,
-  },
-  tabItem: {
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: 0,
-    paddingBottom: 0,
-  },
-  tabIcon: {
-    marginTop: 0,
-    marginBottom: 2,
-  },
-  scene: {
-    backgroundColor: "transparent",
-  },
-});

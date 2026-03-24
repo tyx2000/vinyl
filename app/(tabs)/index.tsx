@@ -2,45 +2,69 @@ import Header from "@/components/Header";
 import List from "@/components/List";
 import PageBackground from "@/components/PageBackground";
 import { useGlobalContext } from "@/context/GlobalContext";
-import { usePlayerRuntimeContext } from "@/context/PlayerRuntimeContext";
-import { useFocusEffect } from "expo-router";
+import useMounted from "@/hooks/useMounted";
+import { useRouter } from "expo-router";
 import { View } from "react-native";
 
 const Home = () => {
+  const router = useRouter();
   const {
-    loading,
-    audios,
-    addAudios,
+    playlist,
+    playlistLoading,
+    loadPlaylists,
+    loadPlaylistAudios,
     playingAudio,
-    playFromQueue,
-    setOptionAudio,
-    setOptionOrigin,
-    setOptionPlaylistId,
+    currentPlaylist,
+    setPlayingAudio,
+    setCurrentPlaylist,
+    clearSleepTimer,
+    removePlaylist,
     setModalName,
-  } = useGlobalContext();
-  const { playing } = usePlayerRuntimeContext();
+  } =
+    useGlobalContext();
 
+  useMounted(loadPlaylists);
 
   return (
     <PageBackground>
       <View style={{ flex: 1 }}>
-        <Header name="Library" handleRightButtonAction={addAudios} />
+        <Header
+          name="Playlist"
+          handleRightButtonAction={() => {
+            setModalName("playlist");
+          }}
+        />
         <List
-          loading={loading}
-          data={audios}
-          isPlaying={playing}
-          playingUri={
-            typeof playingAudio.uri === "string" ? playingAudio.uri : undefined
-          }
+          type="playlist"
+          data={playlist}
+          loading={playlistLoading}
           handleListItemPress={(item) => {
-            const targetIndex = audios.findIndex((audio) => audio.uri === item.uri);
-            playFromQueue(audios, targetIndex < 0 ? 0 : targetIndex);
+            router.push(`/playlist/${item.id}?name=${item.name}`);
           }}
           handleListRightAction={(item) => {
-            setOptionAudio(item);
-            setOptionOrigin("library");
-            setOptionPlaylistId("");
-            setModalName("audioOption");
+            if (typeof item.id !== "string") return;
+            const targetPlaylistId = item.id;
+            void (async () => {
+              const targetPlaylistAudios = await loadPlaylistAudios(targetPlaylistId);
+              const targetUriSet = new Set(
+                targetPlaylistAudios.map((audio) => audio.uri),
+              );
+              const currentPlayingUri =
+                typeof playingAudio.uri === "string" ? playingAudio.uri : "";
+              const queueBelongsToDeletedPlaylist =
+                currentPlaylist.length > 0 &&
+                currentPlaylist.every((audio) => targetUriSet.has(audio.uri));
+              const shouldDestroyPlayerFoot =
+                queueBelongsToDeletedPlaylist ||
+                (!!currentPlayingUri && targetUriSet.has(currentPlayingUri));
+
+              await removePlaylist(targetPlaylistId);
+              if (shouldDestroyPlayerFoot) {
+                setPlayingAudio({});
+                setCurrentPlaylist([]);
+                clearSleepTimer();
+              }
+            })();
           }}
         />
       </View>

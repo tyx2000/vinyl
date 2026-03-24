@@ -180,9 +180,8 @@ export default function PlayerFoot({
       ),
     [playingAudio.name, playingAudio.uri],
   );
-  const hasBottomTabBar = segments[0] === "(tabs)";
   const isPlayerRoute = segments[0] === "player";
-  const miniPlayerBottom = insets.bottom + (hasBottomTabBar ? 86 : 12);
+  const miniPlayerBottom = insets.bottom + 12;
 
   const wrapperBottom = useSharedValue(miniPlayerBottom);
   const swipeX = useSharedValue(0);

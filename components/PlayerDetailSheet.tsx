@@ -1,4 +1,12 @@
 import {
+  NextIcon,
+  PauseIcon,
+  PlayIcon,
+  PlayModeIcon,
+  PreviousIcon,
+  TimerIcon,
+} from "@/components/icons/PlaybackIcons";
+import {
   divider,
   mainColor,
   onMainColor,
@@ -7,15 +15,6 @@ import {
   textPrimary,
   textSecondary,
 } from "@/constants/Colors";
-import {
-  NextIcon,
-  NowPlayingIcon,
-  PauseIcon,
-  PlayIcon,
-  PlayModeIcon,
-  PreviousIcon,
-  TimerIcon,
-} from "@/components/icons/PlaybackIcons";
 import { AudioItem, PlayMode } from "@/context/types";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import ReAnimated, { FadeIn, FadeOut } from "react-native-reanimated";
@@ -78,7 +77,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   queueItemTextActive: {
-    color: onMainColor,
     fontWeight: "700",
   },
   bottomPanel: {
@@ -252,7 +250,6 @@ export default function PlayerDetailSheet({
       <View style={styles.queuePanel}>
         <View style={styles.queueHeader}>
           <Text style={styles.queueHeaderTitle}>Playlist</Text>
-          <Text style={styles.queueHeaderCount}>{queue.length}</Text>
         </View>
         <ScrollView
           style={styles.queueList}
@@ -273,7 +270,6 @@ export default function PlayerDetailSheet({
                 >
                   {item.name}
                 </Text>
-                {active && <NowPlayingIcon size={24} color={onMainColor} animated={playing} />}
               </TouchableOpacity>
             );
           })}
@@ -286,7 +282,6 @@ export default function PlayerDetailSheet({
             <Text style={styles.bottomTitle} numberOfLines={1} ellipsizeMode="middle">
               {title}
             </Text>
-            <Text style={styles.bottomSubTitle}>{subtitle}</Text>
           </View>
           <View style={styles.bottomActions}>
             <TouchableOpacity style={styles.bottomActionBtn} onPress={onPrevious}>

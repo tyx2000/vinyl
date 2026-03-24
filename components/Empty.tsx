@@ -27,11 +27,19 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function Empty() {
+export default function Empty({
+  type = "audio",
+}: {
+  type?: "audio" | "playlist";
+}) {
   return (
     <View style={styles.wrapper}>
       <ReAnimated.View style={styles.empty}>
-        <Text style={styles.message}>No songs yet. Import from your library.</Text>
+        <Text style={styles.message}>
+          {type === "playlist"
+            ? "No playlists yet. Tap Add to create one."
+            : "No songs yet. Tap Add to import local audio."}
+        </Text>
       </ReAnimated.View>
     </View>
   );

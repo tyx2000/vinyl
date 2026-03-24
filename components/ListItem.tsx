@@ -1,14 +1,22 @@
 import {
   divider,
+  mainColor,
   onMainColor,
   textPrimary,
-  textSecondary,
 } from "@/constants/Colors";
-import { NowPlayingIcon } from "@/components/icons/PlaybackIcons";
 import { AudioLike } from "@/context/types";
-import { ReactNode } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import ReAnimated, { FadeInRight, FadeOutLeft } from "react-native-reanimated";
+import ReanimatedSwipeable, {
+  SwipeableMethods,
+} from "react-native-gesture-handler/ReanimatedSwipeable";
+import ReAnimated, {
+  Extrapolation,
+  FadeInRight,
+  FadeOutLeft,
+  SharedValue,
+  interpolate,
+  useAnimatedStyle,
+} from "react-native-reanimated";
 
 const styles = StyleSheet.create({
   item: {
@@ -23,11 +31,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: divider,
   },
+  itemActive: {
+    backgroundColor: "rgba(240, 246, 252, 0.06)",
+    borderRadius: 10,
+  },
   audioInfo: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    paddingHorizontal: 12,
   },
   audioName: {
     flex: 1,
@@ -36,44 +48,86 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: "700",
   },
-  audioNameActive: {
+  swipeRightActionWrap: {
+    width: 96,
+    height: "100%",
+    paddingLeft: 10,
+    justifyContent: 'center'
+  },
+  swipeRightAction: {
+    width: "100%",
+    height: '90%',
+    borderRadius: 12,
+    backgroundColor: mainColor,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  swipeRightActionText: {
     color: onMainColor,
-  },
-  dragHandler: {
-    width: 18,
-    height: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 3,
-    opacity: 0.7,
-  },
-  dragIcon: {
-    width: 8,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: textSecondary,
-  },
-  playingIcon: {
-    width: 28,
-    alignItems: "center",
-    justifyContent: "center",
+    fontSize: 13,
+    fontWeight: "700",
   },
 });
 
+function SwipeRightAction({
+  progress,
+  translation,
+  onPress,
+}: {
+  progress: SharedValue<number>;
+  translation: SharedValue<number>;
+  onPress: () => void;
+}) {
+  const animatedStyle = useAnimatedStyle(() => {
+    const reveal = interpolate(
+      progress.value,
+      [0, 1],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
+    const offset = interpolate(
+      progress.value,
+      [0, 1],
+      [20, 0],
+      Extrapolation.CLAMP,
+    );
+    const drag = Math.min(0, translation.value);
+
+    return {
+      opacity: reveal,
+      transform: [{ translateX: offset + drag * 0.08 }],
+    };
+  });
+
+  return (
+    <ReAnimated.View style={animatedStyle}>
+      <View style={styles.swipeRightActionWrap}>
+        <TouchableOpacity
+          style={styles.swipeRightAction}
+          activeOpacity={0.88}
+          onPress={onPress}
+        >
+          <Text style={styles.swipeRightActionText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
+    </ReAnimated.View>
+  );
+}
+
 const ListItem = ({
   item,
-  renderRightAction,
   onPressItem,
   isActive = false,
-  isPlaying = false,
+  enableSwipeAction = false,
+  onSwipeAction,
 }: {
   item: AudioLike;
   onPressItem?: (item: AudioLike) => void;
-  renderRightAction: (item: AudioLike) => ReactNode;
   isActive?: boolean;
-  isPlaying?: boolean;
+  enableSwipeAction?: boolean;
+  onSwipeAction?: (item: AudioLike) => void;
 }) => {
-  return (
+  const row = (
     <TouchableOpacity
       onPress={() => onPressItem && onPressItem(item)}
       activeOpacity={0.72}
@@ -81,30 +135,42 @@ const ListItem = ({
       <ReAnimated.View
         entering={FadeInRight.duration(220)}
         exiting={FadeOutLeft.duration(160)}
-        style={styles.item}
+        style={[styles.item, isActive && styles.itemActive]}
       >
         <View style={styles.audioInfo}>
-          {isActive ? (
-            <View style={styles.playingIcon}>
-              <NowPlayingIcon size={24} color={onMainColor} animated={isPlaying} />
-            </View>
-          ) : (
-            <View style={styles.dragHandler}>
-              <View style={styles.dragIcon}></View>
-              <View style={styles.dragIcon}></View>
-            </View>
-          )}
           <Text
-            style={[styles.audioName, isActive && styles.audioNameActive]}
+            style={styles.audioName}
             numberOfLines={1}
             ellipsizeMode="middle"
           >
             {item.name}
           </Text>
         </View>
-        {renderRightAction(item)}
       </ReAnimated.View>
     </TouchableOpacity>
+  );
+
+  if (!enableSwipeAction || !onSwipeAction) {
+    return row;
+  }
+
+  return (
+    <ReanimatedSwipeable
+      overshootRight={false}
+      rightThreshold={44}
+      renderRightActions={(progress, translation, swipeableMethods: SwipeableMethods) => (
+        <SwipeRightAction
+          progress={progress}
+          translation={translation}
+          onPress={() => {
+            swipeableMethods.close();
+            onSwipeAction(item);
+          }}
+        />
+      )}
+    >
+      {row}
+    </ReanimatedSwipeable>
   );
 };
 

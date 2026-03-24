@@ -28,6 +28,7 @@ type PlaylistContextValue = {
   setPlaylist: Dispatch<SetStateAction<PlaylistItem[]>>;
   loadPlaylists: () => Promise<void>;
   createPlaylist: (name: string) => Promise<void>;
+  removePlaylist: (playlistId: string) => Promise<void>;
   loadPlaylistAudios: (playlistId: string) => Promise<AudioItem[]>;
   addAudiosToPlaylist: (
     playlistId: string,
@@ -91,6 +92,15 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     if (!nextName) return;
     const nextPlaylists = [...playlist, { id: `p${Date.now()}`, name: nextName }];
     await setLocalValue("vinyl-playlist", JSON.stringify(nextPlaylists));
+    setPlaylist(nextPlaylists);
+    setPlaylistVersion((current) => current + 1);
+  };
+
+  const removePlaylist = async (playlistId: string) => {
+    const nextPlaylists = playlist.filter((item) => item.id !== playlistId);
+    if (nextPlaylists.length === playlist.length) return;
+    await setLocalValue("vinyl-playlist", JSON.stringify(nextPlaylists));
+    await setLocalValue(playlistId, JSON.stringify([]));
     setPlaylist(nextPlaylists);
     setPlaylistVersion((current) => current + 1);
   };
@@ -175,6 +185,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
         setPlaylist,
         loadPlaylists,
         createPlaylist,
+        removePlaylist,
         loadPlaylistAudios,
         addAudiosToPlaylist,
         removeAudioFromPlaylist,
