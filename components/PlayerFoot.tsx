@@ -377,6 +377,24 @@ export default function PlayerFoot({
     }
   };
 
+  const pausePlayer = () => {
+    if (!playerRef.current || !playerRef.current.playing) return;
+    pendingManualPauseRef.current = true;
+    playerRef.current.pause();
+  };
+
+  const playPlayer = () => {
+    if (!playerRef.current || playerRef.current.playing) return;
+    pendingManualPauseRef.current = false;
+    interruptedPauseRef.current = false;
+    const isTrackFinished = duration > 0 && currentTime >= duration - 0.2;
+    if (isTrackFinished) {
+      void restartCurrentTrack();
+      return;
+    }
+    playerRef.current.play();
+  };
+
   const previousAudio = async (e?: GestureResponderEvent) => {
     e?.stopPropagation();
     const prevTrack = playPrevious(true);
@@ -631,8 +649,16 @@ export default function PlayerFoot({
   useEffect(() => {
     const subscription = addRemoteActionListener((event) => {
       const action = event?.action;
-      if (action === "toggle" || action === "play" || action === "pause") {
+      if (action === "toggle") {
         runtimeActionRef.current.togglePlayback();
+        return;
+      }
+      if (action === "play") {
+        playPlayer();
+        return;
+      }
+      if (action === "pause") {
+        pausePlayer();
         return;
       }
       if (action === "next") {
@@ -646,7 +672,7 @@ export default function PlayerFoot({
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [currentTime, duration]);
 
   useEffect(() => {
     const hydratePlayer = async () => {

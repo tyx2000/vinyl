@@ -7,6 +7,9 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -26,6 +29,37 @@ class VinylLockScreenService : Service() {
     super.onCreate()
     ensureChannel()
     mediaSession = MediaSessionCompat(this, SESSION_TAG).apply {
+      setFlags(
+        MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
+          MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
+      )
+      setCallback(
+        object : MediaSessionCompat.Callback() {
+          override fun onPlay() {
+            handleRemoteAction("play")
+          }
+
+          override fun onPause() {
+            handleRemoteAction("pause")
+          }
+
+          override fun onSkipToNext() {
+            handleRemoteAction("next")
+          }
+
+          override fun onSkipToPrevious() {
+            handleRemoteAction("previous")
+          }
+
+          override fun onPlayFromMediaId(mediaId: String?, extras: android.os.Bundle?) {
+            handleRemoteAction("play")
+          }
+
+          override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
+            return super.onMediaButtonEvent(mediaButtonEvent)
+          }
+        }
+      )
       isActive = true
     }
   }
@@ -39,11 +73,11 @@ class VinylLockScreenService : Service() {
         updateSession()
         postForegroundNotification()
       }
-      ACTION_REMOTE_TOGGLE -> VinylLockScreenModule.dispatchRemoteAction("toggle")
-      ACTION_REMOTE_NEXT -> VinylLockScreenModule.dispatchRemoteAction("next")
-      ACTION_REMOTE_PREVIOUS -> VinylLockScreenModule.dispatchRemoteAction("previous")
-      ACTION_REMOTE_PLAY -> VinylLockScreenModule.dispatchRemoteAction("play")
-      ACTION_REMOTE_PAUSE -> VinylLockScreenModule.dispatchRemoteAction("pause")
+      ACTION_REMOTE_TOGGLE -> handleRemoteAction("toggle")
+      ACTION_REMOTE_NEXT -> handleRemoteAction("next")
+      ACTION_REMOTE_PREVIOUS -> handleRemoteAction("previous")
+      ACTION_REMOTE_PLAY -> handleRemoteAction("play")
+      ACTION_REMOTE_PAUSE -> handleRemoteAction("pause")
       ACTION_STOP -> {
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -93,8 +127,11 @@ class VinylLockScreenService : Service() {
     mediaSession.setMetadata(
       MediaMetadataCompat.Builder()
         .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+        .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, title)
         .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
         .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, albumTitle)
+        .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, getApplicationIconBitmap())
+        .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, getApplicationIconBitmap())
         .build()
     )
   }
@@ -134,6 +171,7 @@ class VinylLockScreenService : Service() {
         .setContentTitle(title.ifBlank { "Vinyl" })
         .setContentText(artist.ifBlank { "Local Music" })
         .setSubText(albumTitle.ifBlank { null })
+        .setLargeIcon(getApplicationIconBitmap())
         .setContentIntent(contentPendingIntent())
         .setDeleteIntent(servicePendingIntent(ACTION_STOP, 1010))
         .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -162,6 +200,36 @@ class VinylLockScreenService : Service() {
         )
 
     return builder.build()
+  }
+
+  private fun handleRemoteAction(action: String) {
+    when (action) {
+      "play" -> playing = true
+      "pause" -> playing = false
+      "toggle" -> playing = !playing
+    }
+    updateSession()
+    postForegroundNotification()
+    VinylLockScreenModule.dispatchRemoteAction(action)
+  }
+
+  private fun getApplicationIconBitmap(): Bitmap? {
+    return drawableToBitmap(applicationInfo.loadIcon(packageManager))
+  }
+
+  private fun drawableToBitmap(drawable: Drawable?): Bitmap? {
+    if (drawable == null) return null
+    if (drawable is BitmapDrawable) {
+      return drawable.bitmap
+    }
+
+    val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 256
+    val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 256
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+    drawable.setBounds(0, 0, canvas.width, canvas.height)
+    drawable.draw(canvas)
+    return bitmap
   }
 
   private fun contentPendingIntent(): PendingIntent? {
