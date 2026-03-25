@@ -62,14 +62,15 @@ const styles = StyleSheet.create({
   },
 });
 
-const PlaylistDetails = () => {
+const PlaylistDetailsPage = () => {
   const {
     playFromQueue,
     playingAudio,
+    currentSourcePlaylistId,
     setPlayingAudio,
     currentPlaylist,
     setCurrentPlaylist,
-    playMode,
+    clearCurrentSourcePlaylist,
     clearSleepTimer,
     playlistVersion,
     runInImportSession,
@@ -92,7 +93,6 @@ const PlaylistDetails = () => {
   });
   const cancelImportRef = useRef(false);
   const playingUriRef = useRef<string>("");
-  const playModeRef = useRef(playMode);
 
   const getPlaylistAudios = async () => {
     setLoading(true);
@@ -117,10 +117,6 @@ const PlaylistDetails = () => {
       typeof playingAudio.uri === "string" ? playingAudio.uri : "";
   }, [playingAudio.uri]);
 
-  useEffect(() => {
-    playModeRef.current = playMode;
-  }, [playMode]);
-
   const sortAudiosByName = (items: AudioItem[]) =>
     [...items].sort((a, b) =>
       normalizeAudioName(a.name, a.uri).localeCompare(
@@ -135,9 +131,12 @@ const PlaylistDetails = () => {
   const syncQueueAfterPlaylistChanged = (mergedAudios: AudioItem[]) => {
     const mergedUriSet = new Set(mergedAudios.map((audio) => audio.uri));
     const currentPlayingUri = playingUriRef.current;
+    const isCurrentSourcePlaylist =
+      typeof playlistId === "string" && currentSourcePlaylistId === playlistId;
 
     setCurrentPlaylist((queue) => {
       const isCurrentQueueFromThisPlaylist =
+        isCurrentSourcePlaylist &&
         queue.length > 0 &&
         queue.every((audio) => mergedUriSet.has(audio.uri)) &&
         mergedUriSet.has(currentPlayingUri);
@@ -146,18 +145,7 @@ const PlaylistDetails = () => {
         return queue;
       }
 
-      if (playModeRef.current !== "shuffle") {
-        return sortAudiosByName(mergedAudios);
-      }
-
-      const preservedOrder = queue.filter((audio) => mergedUriSet.has(audio.uri));
-      const preservedUriSet = new Set(preservedOrder.map((audio) => audio.uri));
-      const appended = mergedAudios.filter((audio) => !preservedUriSet.has(audio.uri));
-      for (let i = appended.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [appended[i], appended[j]] = [appended[j], appended[i]];
-      }
-      return [...preservedOrder, ...appended];
+      return sortAudiosByName(mergedAudios);
     });
   };
 
@@ -308,7 +296,10 @@ const PlaylistDetails = () => {
               typeof playingAudio.uri === "string" ? playingAudio.uri : "";
             const isSameAudio = item.uri === currentPlayingUri;
             const playlistUriSet = new Set(orderedAudios.map((audio) => audio.uri));
+            const isCurrentSourcePlaylist =
+              typeof playlistId === "string" && currentSourcePlaylistId === playlistId;
             const isSamePlaylistQueue =
+              isCurrentSourcePlaylist &&
               currentPlaylist.length === orderedAudios.length &&
               currentPlaylist.every((audio) => playlistUriSet.has(audio.uri));
             const trackFinishedWhilePaused =
@@ -317,7 +308,10 @@ const PlaylistDetails = () => {
             if (isSameAudio && isSamePlaylistQueue && !trackFinishedWhilePaused) {
               return;
             }
-            playFromQueue(orderedAudios, targetIndex < 0 ? 0 : targetIndex);
+            playFromQueue(orderedAudios, targetIndex < 0 ? 0 : targetIndex, {
+              playlistId: typeof playlistId === "string" ? playlistId : null,
+              playlistName: typeof name === "string" ? name : null,
+            });
           }}
           handleListRightAction={(item) => {
             if (importing) return;
@@ -328,14 +322,24 @@ const PlaylistDetails = () => {
 
             void (async () => {
               const previousAudios = await loadPlaylistAudios(playlistId);
+              const previousUriSet = new Set(previousAudios.map((audio) => audio.uri));
+              const isCurrentSourcePlaylist =
+                typeof playlistId === "string" && currentSourcePlaylistId === playlistId;
+              const sourceQueueMatchesThisPlaylist =
+                isCurrentSourcePlaylist ||
+                (!currentSourcePlaylistId &&
+                  currentPlaylist.length > 0 &&
+                  currentPlaylist.every((audio) => previousUriSet.has(audio.uri)));
               await removeAudioFromPlaylist(playlistId, targetUri);
               const nextAudios = await loadPlaylistAudios(playlistId);
               setAudios(nextAudios);
 
               const isDeletingCurrentPlayingAudio =
+                sourceQueueMatchesThisPlaylist &&
                 typeof playingAudio.uri === "string" &&
                 playingAudio.uri === targetUri;
               if (isDeletingCurrentPlayingAudio) {
+                clearCurrentSourcePlaylist();
                 setPlayingAudio({});
                 setCurrentPlaylist([]);
                 clearSleepTimer();
@@ -343,25 +347,21 @@ const PlaylistDetails = () => {
                 return;
               }
 
-              const sourceUriSet = new Set(
-                previousAudios.map((audio) => audio.uri),
-              );
               const latestSourceUriSet = new Set(
                 nextAudios.map((audio) => audio.uri),
               );
               setCurrentPlaylist((queue) => {
                 const isCurrentQueueFromThisPlaylist =
+                  sourceQueueMatchesThisPlaylist &&
                   queue.length > 0 &&
-                  queue.every((audio) => sourceUriSet.has(audio.uri));
+                  queue.every((audio) => previousUriSet.has(audio.uri));
                 if (!isCurrentQueueFromThisPlaylist) {
                   return queue;
                 }
-                if (playModeRef.current === "shuffle") {
-                  return queue.filter((audio) =>
-                    latestSourceUriSet.has(audio.uri),
-                  );
-                }
-                return sortAudiosByName(nextAudios);
+                const nextQueue = queue.filter((audio) =>
+                  latestSourceUriSet.has(audio.uri),
+                );
+                return sortAudiosByName(nextQueue);
               });
             })();
           }}
@@ -396,4 +396,4 @@ const PlaylistDetails = () => {
   );
 };
 
-export default PlaylistDetails;
+export default PlaylistDetailsPage;

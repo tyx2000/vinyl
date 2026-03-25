@@ -120,22 +120,6 @@ export function TimerIcon({
   );
 }
 
-export function ShuffleIcon({
-  size = 24,
-  color = "#1F1F28",
-  strokeWidth = 1.75,
-}: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path d="M4.2 7.4H7.1C8.4 7.4 9.7 8 10.6 9L16.1 15.2C17 16.2 18.3 16.8 19.6 16.8H20.6" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-      <Path d="M4.2 16.6H7.1C8.4 16.6 9.7 16 10.6 15L11.9 13.5" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-      <Path d="M14.8 10.5L16.1 9C17 8 18.3 7.4 19.6 7.4H20.6" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-      <Polyline points="17.6,4.8 20.8,7.4 17.6,10" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-      <Polyline points="17.6,14.2 20.8,16.8 17.6,19.4" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-    </Svg>
-  );
-}
-
 export function RepeatIcon({
   size = 24,
   color = "#1F1F28",
@@ -143,11 +127,8 @@ export function RepeatIcon({
 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path d="M5.1 8.2V6.8C5.1 5.9 5.8 5.2 6.7 5.2H18.8" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-      <Polyline points="16.2,2.9 18.9,5.2 16.2,7.5" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-      <Path d="M18.9 15.8V17.2C18.9 18.1 18.2 18.8 17.3 18.8H5.2" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-      <Polyline points="7.8,21.1 5.1,18.8 7.8,16.5" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-      <Path d="M5.1 12H18.9" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
+      <Path d="M4.8 12H18.3" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
+      <Polyline points="15.3,9.1 19.2,12 15.3,14.9" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
     </Svg>
   );
 }
@@ -159,12 +140,24 @@ export function RepeatOneIcon({
 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path d="M5.1 8.2V6.8C5.1 5.9 5.8 5.2 6.7 5.2H18.8" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-      <Polyline points="16.2,2.9 18.9,5.2 16.2,7.5" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-      <Path d="M18.9 15.8V17.2C18.9 18.1 18.2 18.8 17.3 18.8H5.2" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-      <Polyline points="7.8,21.1 5.1,18.8 7.8,16.5" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-      <Path d="M11.8 10.1V14.9" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
-      <Path d="M10.4 11.3L11.8 10.1" fill="none" stroke={color} {...iconStroke(strokeWidth)} />
+      <Path
+        d="M17.7 12C17.7 15.2 15.2 17.7 12 17.7C9.2 17.7 6.9 15.8 6.3 13.3"
+        fill="none"
+        stroke={color}
+        {...iconStroke(strokeWidth)}
+      />
+      <Path
+        d="M6.3 12C6.3 8.8 8.8 6.3 12 6.3C14.8 6.3 17.1 8.2 17.7 10.7"
+        fill="none"
+        stroke={color}
+        {...iconStroke(strokeWidth)}
+      />
+      <Polyline
+        points="6.1,16.7 6.2,13.1 9.4,14.2"
+        fill="none"
+        stroke={color}
+        {...iconStroke(strokeWidth)}
+      />
     </Svg>
   );
 }
@@ -227,7 +220,6 @@ export function PlayModeIcon({
   color?: string;
 }) {
   const loopAlpha = useSharedValue(mode === "loop" ? 1 : 0);
-  const shuffleAlpha = useSharedValue(mode === "shuffle" ? 1 : 0);
   const singleAlpha = useSharedValue(mode === "single" ? 1 : 0);
 
   useEffect(() => {
@@ -235,15 +227,11 @@ export function PlayModeIcon({
       duration: 200,
       easing: Easing.inOut(Easing.quad),
     });
-    shuffleAlpha.value = withTiming(mode === "shuffle" ? 1 : 0, {
-      duration: 200,
-      easing: Easing.inOut(Easing.quad),
-    });
     singleAlpha.value = withTiming(mode === "single" ? 1 : 0, {
       duration: 200,
       easing: Easing.inOut(Easing.quad),
     });
-  }, [mode, loopAlpha, shuffleAlpha, singleAlpha]);
+  }, [mode, loopAlpha, singleAlpha]);
 
   const layerStyle = (alpha: SharedValue<number>) =>
     useAnimatedStyle(() => ({
@@ -255,7 +243,6 @@ export function PlayModeIcon({
     }));
 
   const loopStyle = layerStyle(loopAlpha);
-  const shuffleStyle = layerStyle(shuffleAlpha);
   const singleStyle = layerStyle(singleAlpha);
 
   return (
@@ -273,15 +260,6 @@ export function PlayModeIcon({
         ]}
       >
         <RepeatIcon size={size} color={color} />
-      </ReAnimated.View>
-      <ReAnimated.View
-        style={[
-          styles.modeLayer,
-          { width: size, height: size },
-          shuffleStyle,
-        ]}
-      >
-        <ShuffleIcon size={size} color={color} />
       </ReAnimated.View>
       <ReAnimated.View
         style={[

@@ -15,8 +15,10 @@ const Home = () => {
     loadPlaylistAudios,
     playingAudio,
     currentPlaylist,
+    currentSourcePlaylistId,
     setPlayingAudio,
     setCurrentPlaylist,
+    clearCurrentSourcePlaylist,
     clearSleepTimer,
     removePlaylist,
     setModalName,
@@ -40,7 +42,7 @@ const Home = () => {
           data={playlist}
           loading={playlistLoading}
           handleListItemPress={(item) => {
-            router.push(`/playlist/${item.id}?name=${item.name}`);
+            router.push(`/${item.id}?name=${item.name}`);
           }}
           handleListRightAction={(item) => {
             if (typeof item.id !== "string") return;
@@ -52,15 +54,20 @@ const Home = () => {
               );
               const currentPlayingUri =
                 typeof playingAudio.uri === "string" ? playingAudio.uri : "";
+              const isCurrentSourcePlaylist = currentSourcePlaylistId === targetPlaylistId;
               const queueBelongsToDeletedPlaylist =
                 currentPlaylist.length > 0 &&
                 currentPlaylist.every((audio) => targetUriSet.has(audio.uri));
+              const shouldDestroyLegacyPlayerFoot =
+                !currentSourcePlaylistId &&
+                (queueBelongsToDeletedPlaylist ||
+                  (!!currentPlayingUri && targetUriSet.has(currentPlayingUri)));
               const shouldDestroyPlayerFoot =
-                queueBelongsToDeletedPlaylist ||
-                (!!currentPlayingUri && targetUriSet.has(currentPlayingUri));
+                isCurrentSourcePlaylist || shouldDestroyLegacyPlayerFoot;
 
               await removePlaylist(targetPlaylistId);
               if (shouldDestroyPlayerFoot) {
+                clearCurrentSourcePlaylist();
                 setPlayingAudio({});
                 setCurrentPlaylist([]);
                 clearSleepTimer();

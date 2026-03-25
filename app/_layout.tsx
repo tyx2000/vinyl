@@ -17,8 +17,8 @@ export {
 } from "expo-router";
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: "(tabs)",
+  // Ensure reloading starts from the playlist home route.
+  initialRouteName: "index",
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -73,10 +73,8 @@ function RootLayoutNav() {
                 contentStyle: { backgroundColor: "transparent" },
               }}
             >
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="player" />
-              <Stack.Screen name="playlist/[playlistId]" />
-              <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+              <Stack.Screen name="index" />
+              <Stack.Screen name="[playlistId]" />
             </Stack>
           </GlobalProvider>
         </GestureHandlerRootView>

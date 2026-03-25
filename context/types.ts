@@ -14,4 +14,4 @@ export type PlaylistItem = {
   name: string;
 };
 
-export type PlayMode = "shuffle" | "loop" | "single";
+export type PlayMode = "loop" | "single";

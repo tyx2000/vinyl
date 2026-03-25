@@ -5,7 +5,6 @@ import {
   ReactNode,
   SetStateAction,
   useCallback,
-  useRef,
   createContext,
   useEffect,
   useContext,
@@ -21,12 +20,19 @@ type PlayerContextValue = {
   currentIndex: number;
   playMode: PlayMode;
   setPlayMode: Dispatch<SetStateAction<PlayMode>>;
+  currentSourcePlaylistId: string | null;
+  currentSourcePlaylistName: string | null;
+  clearCurrentSourcePlaylist: () => void;
   sleepTimerEndsAt: number | null;
   setSleepTimerMinutes: (minutes: number | null, fromTs?: number) => void;
   clearSleepTimer: () => void;
-  playFromQueue: (playlist: AudioItem[], index: number) => void;
-  playNext: () => AudioItem | null;
-  playPrevious: () => AudioItem | null;
+  playFromQueue: (
+    playlist: AudioItem[],
+    index: number,
+    source?: { playlistId?: string | null; playlistName?: string | null },
+  ) => void;
+  playNext: (manualSwitch?: boolean) => AudioItem | null;
+  playPrevious: (manualSwitch?: boolean) => AudioItem | null;
 };
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -37,58 +43,60 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [currentPlaylist, setCurrentPlaylist] = useState<AudioItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [playMode, setPlayMode] = useState<PlayMode>("loop");
+  const [currentSourcePlaylistId, setCurrentSourcePlaylistId] = useState<string | null>(null);
+  const [currentSourcePlaylistName, setCurrentSourcePlaylistName] = useState<string | null>(null);
   const [sleepTimerEndsAt, setSleepTimerEndsAt] = useState<number | null>(null);
-  const prevPlayModeRef = useRef<PlayMode>("loop");
-  const playlistBeforeShuffleRef = useRef<AudioItem[] | null>(null);
 
-  const playFromQueue = useCallback((playlist: AudioItem[], index: number) => {
-    if (playlist.length === 0) return;
-    const normalizedPlaylist = normalizeAudioItems(playlist);
-    const nextIndex = Math.max(0, Math.min(index, normalizedPlaylist.length - 1));
-    const nextAudio = normalizedPlaylist[nextIndex];
-    setCurrentPlaylist(normalizedPlaylist);
-    setCurrentIndex(nextIndex);
-    setPlayingAudio({ ...normalizeAudioItem(nextAudio) });
-    setPlayRequestId((id) => id + 1);
+  const clearCurrentSourcePlaylist = useCallback(() => {
+    setCurrentSourcePlaylistId(null);
+    setCurrentSourcePlaylistName(null);
   }, []);
 
-  const shuffleAudios = (items: AudioItem[]) => {
-    const next = [...items];
-    for (let i = next.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [next[i], next[j]] = [next[j], next[i]];
-    }
-    return next;
-  };
+  const playFromQueue = useCallback(
+    (
+      playlist: AudioItem[],
+      index: number,
+      source?: { playlistId?: string | null; playlistName?: string | null },
+    ) => {
+      if (playlist.length === 0) return;
+      const normalizedPlaylist = normalizeAudioItems(playlist);
+      const nextIndex = Math.max(0, Math.min(index, normalizedPlaylist.length - 1));
+      const nextAudio = normalizedPlaylist[nextIndex];
+      setCurrentPlaylist(normalizedPlaylist);
+      setCurrentIndex(nextIndex);
+      setPlayingAudio({ ...normalizeAudioItem(nextAudio) });
+      if (typeof source?.playlistId === "string" && source.playlistId) {
+        setCurrentSourcePlaylistId(source.playlistId);
+        setCurrentSourcePlaylistName(
+          typeof source.playlistName === "string" ? source.playlistName : null,
+        );
+      } else {
+        clearCurrentSourcePlaylist();
+      }
+      setPlayRequestId((id) => id + 1);
+    },
+    [clearCurrentSourcePlaylist],
+  );
 
-  const mergeShuffleSnapshotWithCurrent = (
-    snapshot: AudioItem[],
-    current: AudioItem[],
-  ) => {
-    const currentSet = new Set(current.map((item) => item.uri));
-    const kept = snapshot.filter((item) => currentSet.has(item.uri));
-    const keptSet = new Set(kept.map((item) => item.uri));
-    const appended = current.filter((item) => !keptSet.has(item.uri));
-    return [...kept, ...appended];
-  };
-
-  const playNext = () => {
+  const playNext = (manualSwitch = false) => {
     if (currentPlaylist.length === 0) return null;
+    const activeIndexByUri =
+      typeof playingAudio.uri === "string"
+        ? currentPlaylist.findIndex((audio) => audio.uri === playingAudio.uri)
+        : -1;
+    const activeIndex =
+      activeIndexByUri >= 0
+        ? activeIndexByUri
+        : currentIndex >= 0 && currentIndex < currentPlaylist.length
+          ? currentIndex
+          : 0;
 
     let nextIndex = -1;
-    if (playMode === "shuffle") {
-      if (currentIndex < 0) {
-        nextIndex = 0;
-      } else if (currentIndex + 1 < currentPlaylist.length) {
-        nextIndex = currentIndex + 1;
-      }
-    } else if (playMode === "single") {
-      nextIndex = currentIndex >= 0 ? currentIndex : 0;
+    if (playMode === "single" && !manualSwitch) {
+      nextIndex = activeIndex;
     } else {
-      if (currentIndex < 0) {
-        nextIndex = 0;
-      } else if (currentIndex + 1 < currentPlaylist.length) {
-        nextIndex = currentIndex + 1;
+      if (activeIndex + 1 < currentPlaylist.length) {
+        nextIndex = activeIndex + 1;
       }
     }
 
@@ -99,26 +107,25 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return nextAudio;
   };
 
-  const playPrevious = () => {
+  const playPrevious = (manualSwitch = false) => {
     if (currentPlaylist.length === 0) return null;
+    const activeIndexByUri =
+      typeof playingAudio.uri === "string"
+        ? currentPlaylist.findIndex((audio) => audio.uri === playingAudio.uri)
+        : -1;
+    const activeIndex =
+      activeIndexByUri >= 0
+        ? activeIndexByUri
+        : currentIndex >= 0 && currentIndex < currentPlaylist.length
+          ? currentIndex
+          : 0;
 
     let prevIndex = -1;
-    if (playMode === "shuffle") {
-      if (currentIndex < 0) {
-        prevIndex = 0;
-      } else {
-        prevIndex =
-          (currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
-      }
-    } else if (playMode === "single") {
-      prevIndex = currentIndex >= 0 ? currentIndex : 0;
+    if (playMode === "single" && !manualSwitch) {
+      prevIndex = activeIndex;
     } else {
-      if (currentIndex < 0) {
-        prevIndex = 0;
-      } else {
-        prevIndex =
-          (currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
-      }
+      prevIndex =
+        (activeIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
     }
 
     if (prevIndex < 0) return null;
@@ -153,66 +160,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }, [playingAudio.uri, currentIndex, currentPlaylist]);
 
-  useEffect(() => {
-    const prevMode = prevPlayModeRef.current;
-    if (
-      playMode === "shuffle" &&
-      prevMode !== "shuffle" &&
-      currentPlaylist.length > 1
-    ) {
-      const activeIndexByUri =
-        typeof playingAudio.uri === "string"
-          ? currentPlaylist.findIndex((audio) => audio.uri === playingAudio.uri)
-          : -1;
-      const activeIndex =
-        currentIndex >= 0 && currentIndex < currentPlaylist.length
-          ? currentIndex
-          : activeIndexByUri >= 0
-            ? activeIndexByUri
-            : 0;
-
-      playlistBeforeShuffleRef.current = [...currentPlaylist];
-
-      const activeAudio = currentPlaylist[activeIndex];
-      const rest = currentPlaylist.filter((_, index) => index !== activeIndex);
-      const shuffledRest = shuffleAudios(rest);
-      setCurrentPlaylist([activeAudio, ...shuffledRest]);
-      setCurrentIndex(0);
-    }
-
-    if (playMode !== "shuffle" && prevMode === "shuffle") {
-      const beforeShuffle = playlistBeforeShuffleRef.current;
-      if (beforeShuffle && beforeShuffle.length > 0) {
-        const mergedSnapshot = mergeShuffleSnapshotWithCurrent(
-          beforeShuffle,
-          currentPlaylist,
-        );
-        const currentUri =
-          typeof playingAudio.uri === "string"
-            ? playingAudio.uri
-            : currentPlaylist[currentIndex]?.uri;
-        const restoredIndex = currentUri
-          ? mergedSnapshot.findIndex((audio) => audio.uri === currentUri)
-          : -1;
-        setCurrentPlaylist(mergedSnapshot);
-        setCurrentIndex(restoredIndex >= 0 ? restoredIndex : 0);
-      }
-      playlistBeforeShuffleRef.current = null;
-    }
-
-    if (playMode === "shuffle" && prevMode === "shuffle") {
-      const beforeShuffle = playlistBeforeShuffleRef.current;
-      if (beforeShuffle && beforeShuffle.length > 0) {
-        playlistBeforeShuffleRef.current = mergeShuffleSnapshotWithCurrent(
-          beforeShuffle,
-          currentPlaylist,
-        );
-      }
-    }
-
-    prevPlayModeRef.current = playMode;
-  }, [playMode, currentPlaylist, currentIndex, playingAudio.uri]);
-
   return (
     <PlayerContext.Provider
       value={{
@@ -224,6 +171,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         currentIndex,
         playMode,
         setPlayMode,
+        currentSourcePlaylistId,
+        currentSourcePlaylistName,
+        clearCurrentSourcePlaylist,
         sleepTimerEndsAt,
         setSleepTimerMinutes,
         clearSleepTimer,

@@ -1,0 +1,13 @@
+{
+  "name": "vinyl-lockscreen-controls",
+  "version": "1.0.0",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "private": true,
+  "peerDependencies": {
+    "expo": "*",
+    "expo-modules-core": "*",
+    "react": "*",
+    "react-native": "*"
+  }
+}
